@@ -1306,6 +1306,176 @@ npm run serve
    - 确认签到相关功能已完全移除
    - 验证系统运行稳定性
 
+## GitHub 部署指南
+
+### 项目地址
+- GitHub仓库: https://github.com/Erd-omg/club_management
+
+### 从GitHub克隆项目
+
+```bash
+# 克隆项目到本地
+git clone https://github.com/Erd-omg/club_management.git
+
+# 进入项目目录
+cd club_management
+```
+
+### 首次运行项目
+
+#### 1. 数据库初始化
+
+```bash
+# 执行数据库初始化脚本
+mysql -u root -p < database_init.sql
+```
+
+#### 2. 后端配置
+
+```bash
+# 进入后端目录
+cd backend
+
+# 根据你的环境修改配置文件
+# 编辑 src/main/resources/application.yml
+# 修改数据库连接信息
+
+# 编译项目
+mvn clean package -DskipTests
+
+# 启动后端服务
+java -jar target/club-management-1.0.0.jar
+```
+
+#### 3. 前端配置
+
+```bash
+# 进入前端目录
+cd frontend
+
+# 安装依赖
+npm install
+
+# 启动开发服务器
+npm run serve
+```
+
+### 测试人员协作指南
+
+#### 如何加入项目
+
+1. **申请访问权限**
+   - 联系项目管理员（Erd-omg）
+   - 提供你的GitHub用户名
+   - 说明你的测试角色
+
+2. **获取访问权限**
+   - 项目管理员会邀请你作为协作者
+   - 你将收到一封来自GitHub的邮件邀请
+   - 点击邮件中的"接受邀请"链接
+
+3. **权限设置**
+   - 项目管理员为测试人员设置**Read**权限
+   - 测试人员可以：
+     - 克隆项目
+     - 查看代码
+     - 提交Issue报告问题
+     - Fork项目到自己的仓库
+   - 测试人员**不能**：
+     - 直接推送到主分支
+     - 删除仓库
+     - 修改仓库设置
+
+#### 测试人员工作流程
+
+1. **克隆项目**
+   ```bash
+   git clone https://github.com/Erd-omg/club_management.git
+   cd club_management
+   ```
+
+2. **安装依赖并运行**
+   - 按照"首次运行项目"步骤操作
+   - 确保前后端都正常运行
+
+3. **执行测试**
+   - 参考本文档的"功能测试指南"部分
+   - 系统性地测试各个功能模块
+   - 记录测试结果和问题
+
+4. **提交测试报告**
+   - 在GitHub仓库创建Issue
+   - 详细描述发现的问题：
+     - 问题现象
+     - 复现步骤
+     - 预期结果
+     - 实际结果
+     - 截图（如有）
+   - 使用标签标记（如：bug、测试、功能建议等）
+
+5. **获取最新代码**
+   ```bash
+   # 拉取最新代码
+   git pull origin main
+   ```
+
+#### 管理员操作指南
+
+##### 为测试人员添加访问权限
+
+1. 进入GitHub仓库页面
+2. 点击"Settings"选项卡
+3. 在左侧菜单中选择"Collaborators"
+4. 点击"Add people"按钮
+5. 输入测试人员的GitHub用户名或邮箱
+6. 选择权限级别：
+   - **Read**: 只读权限，适合测试人员
+   - **Triage**: 可以管理Issues和Pull Requests
+   - **Write**: 可以推送代码（不推荐给测试人员）
+   - **Maintain**: 可以管理仓库设置
+   - **Admin**: 完全权限（不推荐给测试人员）
+7. 点击"Add [username] to this repository"
+
+##### 推荐的权限设置
+
+- **测试人员**: Read权限
+- **开发人员**: Write权限
+- **项目维护者**: Maintain权限
+- **项目所有者**: Admin权限
+
+#### 常见问题
+
+##### Q: 无法克隆仓库？
+A: 检查以下几点：
+- 确认已接受GitHub邀请
+- 确认网络连接正常
+- 尝试使用SSH方式克隆（如果已配置SSH密钥）
+
+##### Q: 如何报告Bug？
+A: 在GitHub仓库的Issues页面创建新Issue，包括：
+- 问题标题
+- 详细描述
+- 复现步骤
+- 截图或日志
+- 标签分类
+
+##### Q: 如何获取最新代码？
+A: 使用命令：
+```bash
+git pull origin main
+```
+
+##### Q: 中国大陆访问GitHub慢怎么办？
+A: 可以考虑：
+- 使用GitHub镜像站点
+- 配置代理或VPN
+- 使用GitHub Desktop客户端
+- 使用码云(Gitee)等国内平台
+
 ## 联系信息
 
 如有问题或建议，请联系开发团队。
+
+### 项目维护者
+- GitHub: Erd-omg
+- 仓库地址: https://github.com/Erd-omg/club_management
