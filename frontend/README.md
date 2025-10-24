@@ -9,15 +9,37 @@
 - Sass (样式预处理)
 
 ## Setup
+
+### 快速开始
 ```bash
 cd frontend
 npm install
 npm run serve
 ```
 
-- Dev server: http://localhost:5174
-- Proxy to backend: http://localhost:8081/api
-- Env vars: see .env.development
+### 环境配置
+- **开发服务器**: http://localhost:5174
+- **后端代理**: http://localhost:8081/api
+- **环境变量**: 查看 `.env.development`
+- **构建输出**: `dist/` 目录
+
+### 可用命令
+```bash
+# 安装依赖
+npm install
+
+# 启动开发服务器
+npm run serve
+
+# 构建生产版本
+npm run build
+
+# 运行测试
+npm run test
+
+# 代码检查和修复
+npm run lint
+```
 
 ## 功能模块
 
@@ -84,12 +106,12 @@ npm run serve
 - 角色：社长
 
 ### 社团成员
-- 学号：2021001，密码：password，角色：社长
-- 学号：2021002，密码：password，角色：副社长
-- 学号：2021003，密码：password，角色：部长
-- 学号：2021004，密码：password，角色：副部长
-- 学号：2021005，密码：password，角色：干事
-- 学号：2021006，密码：password，角色：指导老师
+- 学号：20211001，密码：password，角色：社长
+- 学号：20211002，密码：password，角色：副社长
+- 学号：20211003，密码：password，角色：部长
+- 学号：20211004，密码：password，角色：副部长
+- 学号：20211005，密码：password，角色：干事
+- 学号：20211006，密码：password，角色：指导老师
 
 ## 最新功能更新
 
@@ -114,9 +136,33 @@ npm run serve
 - ✅ 审批弹窗高度优化
 
 ## Notes
-- JWT存储在localStorage中，axios自动附加Authorization头
-- 支持基于角色的权限控制
-- 响应式设计，支持多设备访问
-- 集成ECharts进行数据可视化
-- 完全移除了消息中心和头像功能
-- 活动参与人员管理功能已全面修复
+
+### 技术要点
+- **认证管理**：JWT存储在localStorage中，axios自动附加Authorization头
+- **权限控制**：支持基于角色的权限控制，细粒度权限管理
+- **响应式设计**：支持桌面端、平板端、手机端多设备访问
+- **数据可视化**：集成ECharts进行数据可视化
+- **状态管理**：使用Vuex管理全局状态（用户信息、权限等）
+- **路由守卫**：实现路由权限拦截
+
+### 功能特点
+- ✅ 完全移除了消息中心和头像功能
+- ✅ 活动参与人员管理功能已全面修复
+- ✅ 支持活动附件上传和下载
+- ✅ 支持数据导出（Excel/PDF）
+- ✅ 支持批量导入成员
+- ✅ 支持多签审批流程
+
+### 浏览器支持
+- Chrome 90+
+- Firefox 88+
+- Edge 90+
+- Safari 14+
+- 移动端浏览器
+
+### 开发建议
+1. 使用ES6+语法
+2. 遵循Vue组件规范
+3. 保持代码风格统一
+4. 添加必要的注释
+5. 测试所有功能模块

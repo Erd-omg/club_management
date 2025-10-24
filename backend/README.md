@@ -72,19 +72,71 @@ src/main/java/com/club/management/
 
 ## 数据库配置
 
+### 快速初始化
+```bash
+# 方式1：使用项目根目录的初始化脚本（推荐）
+mysql -u root -p < ../database_init.sql
+
+# 方式2：手动执行
+mysql -u root -p
+CREATE DATABASE club_management CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE club_management;
+SOURCE ../database_init.sql;
+```
+
+### 数据库配置说明
 1. 确保MySQL服务已启动
-2. 创建数据库：`club_management`
-3. 执行建表语句（见PRD文档）
-4. 执行初始化数据脚本：`src/main/resources/sql/init_data.sql`
+2. 数据库名称：`club_management`
+3. 字符集：`utf8mb4`
+4. 排序规则：`utf8mb4_unicode_ci`
+5. 初始化脚本：项目根目录 `database_init.sql`
+6. 包含10张表：部门、成员、活动、审批、参与等
+7. 自动插入测试数据（16个成员，4个部门，4个活动）
 
 ## 运行说明
 
-1. 确保已安装并使用 JDK 21（本项目已在 JDK 21 下运行）
-2. 修改 `application.yml` 中的数据库连接信息
-3. 首次运行建议：`mvn -DskipTests clean package`
-4. 启动：`mvn spring-boot:run`（或执行根目录下 `backend/start_app.bat`）
-5. 应用端口：`8081`，上下文路径：`/api`
-6. Swagger 文档暂未启用（Springfox 与 Spring Boot 2.7 + JDK 21 存在兼容问题）
+### 环境要求
+- JDK 21（必须）
+- Maven 3.6+
+- MySQL 8.0+
+- 操作系统：Windows/Linux/Mac
+
+### 启动步骤
+1. **配置数据库**
+   ```bash
+   # 修改 src/main/resources/application.yml
+   # 确保数据库连接信息正确
+   spring:
+     datasource:
+       url: jdbc:mysql://localhost:3306/club_management
+       username: root
+       password: your_password
+   ```
+
+2. **编译项目**
+   ```bash
+   mvn clean package -DskipTests
+   ```
+
+3. **启动服务**
+   ```bash
+   # 方式1：使用jar包启动
+   java -jar target/club-management-1.0.0.jar
+   
+   # 方式2：使用Maven启动
+   mvn spring-boot:run
+   ```
+
+4. **验证启动**
+   - 访问：http://localhost:8081/api/auth/validate
+   - 返回401表示服务正常
+
+### 配置说明
+- **应用端口**：8081
+- **上下文路径**：/api
+- **JWT有效期为**：24小时
+- **最大文件上传**：10MB
+- **Swagger文档**：暂未启用（兼容性问题）
 
 ## API接口
 
@@ -147,12 +199,12 @@ src/main/java/com/club/management/
 - 角色：社长
 
 ### 社团成员（member表）
-- 学号：2021001，密码：password，角色：社长
-- 学号：2021002，密码：password，角色：副社长
-- 学号：2021003，密码：password，角色：部长
-- 学号：2021004，密码：password，角色：副部长
-- 学号：2021005，密码：password，角色：干事
-- 学号：2021006，密码：password，角色：指导老师
+- 学号：20211001，密码：password，角色：社长
+- 学号：20211002，密码：password，角色：副社长
+- 学号：20211003，密码：password，角色：部长
+- 学号：20211004，密码：password，角色：副部长
+- 学号：20211005，密码：password，角色：干事
+- 学号：20211006，密码：password，角色：指导老师
 
 ## 注意事项
 
@@ -198,12 +250,24 @@ src/main/java/com/club/management/
 
 ## 注意事项
 
-1. 所有接口都需要 JWT 认证（除登录接口外）
-2. 密码使用BCrypt加密存储
-3. 登录失败5次会锁定30分钟
-4. JWT token有效期为24小时
-5. 支持跨域请求
-6. 活动参与人员管理功能已全面修复
-7. 完全移除了消息系统相关功能
-8. 活动报名功能支持权限控制
+### 安全说明
+1. **认证机制**：所有接口都需要 JWT 认证（除登录接口外）
+2. **密码加密**：使用BCrypt加密存储
+3. **登录锁定**：登录失败5次会锁定30分钟
+4. **Token有效期**：JWT token有效期为24小时
+5. **跨域支持**：已配置CORS，支持跨域请求
+
+### 功能说明
+1. **活动参与管理**：已全面修复，支持完整的参与人员管理
+2. **消息系统**：已完全移除，简化系统架构
+3. **活动报名**：支持权限控制，指导老师不能报名
+4. **多签审批**：支持多人审批流程
+5. **文件上传**：支持活动附件上传（最大10MB）
+
+### 开发建议
+1. 生产环境建议修改JWT密钥
+2. 定期备份数据库
+3. 监控系统日志
+4. 及时更新依赖版本
+5. 遵循RESTful API设计规范
 
