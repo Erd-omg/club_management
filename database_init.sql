@@ -175,7 +175,7 @@ INSERT INTO member (id, stu_id, name, gender, college, major, grade, phone, emai
 (3, '20211003', '王五', '男', '计算机学院', '网络工程', '大二', '13800138003', 'wangwu@example.com', '2021-09-01', 2, '部长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
 (4, '20211004', '赵六', '女', '计算机学院', '信息安全', '大二', '13800138004', 'zhaoliu@example.com', '2021-09-01', 2, '副部长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
 (5, '20211005', '钱七', '男', '计算机学院', '数据科学与大数据技术', '大一', '13800138005', 'qianqi@example.com', '2021-09-01', 2, '干事', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
-(6, '20211006', '孙八', '女', '计算机学院', '人工智能', '研一', '13800138006', 'sunba@example.com', '2021-09-01', NULL, '指导老师', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
+(6, '20211006', '孙八', '女', '计算机学院', NULL, NULL, '13800138006', 'sunba@example.com', '2021-09-01', NULL, '指导老师', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
 (7, '20211007', '周九', '男', '计算机学院', '计算机科学与技术', '大二', '13800138007', 'zhoujiu@example.com', '2021-09-01', 3, '部长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
 (8, '20211008', '吴十', '女', '计算机学院', '软件工程', '大二', '13800138008', 'wushi@example.com', '2021-09-01', 3, '副部长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
 (9, '20211009', '郑十一', '男', '计算机学院', '网络工程', '大一', '13800138009', 'zhengshiyi@example.com', '2021-09-01', 3, '干事', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),

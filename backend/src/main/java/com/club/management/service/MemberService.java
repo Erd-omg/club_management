@@ -159,6 +159,12 @@ public class MemberService extends ServiceImpl<MemberMapper, Member> {
             member.setDeptId(null);
         }
         
+        // 指导老师没有专业和年级
+        if ("指导老师".equals(member.getRole())) {
+            member.setMajor(null);
+            member.setGrade(null);
+        }
+        
         // 保存社员记录
         save(member);
         
@@ -216,6 +222,12 @@ public class MemberService extends ServiceImpl<MemberMapper, Member> {
         // 社长、副社长、指导老师没有部门
         if ("社长".equals(member.getRole()) || "副社长".equals(member.getRole()) || "指导老师".equals(member.getRole())) {
             member.setDeptId(null);
+        }
+        
+        // 指导老师没有专业和年级
+        if ("指导老师".equals(member.getRole())) {
+            member.setMajor(null);
+            member.setGrade(null);
         }
 
         updateById(member);
@@ -441,6 +453,12 @@ public class MemberService extends ServiceImpl<MemberMapper, Member> {
                         member.setDeptId(null);
                     } else if (deptIdStr != null && !deptIdStr.isEmpty()) {
                         member.setDeptId(Long.parseLong(deptIdStr));
+                    }
+                    
+                    // 指导老师没有专业和年级
+                    if ("指导老师".equals(role)) {
+                        member.setMajor(null);
+                        member.setGrade(null);
                     }
                     
                     member.setRole(role);
