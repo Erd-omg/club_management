@@ -82,7 +82,8 @@ mysql -u root -p < database_init.sql
 - 默认创建数据库名：`club_management`
 - 字符集：`utf8mb4`
 - 初始化脚本会自动创建表结构并插入测试数据
-- 所有测试账号密码统一为：`password`
+- 测试账号密码规则：学号后6位（例如：学号20211001的密码为110001）
+- 管理员账号（admin）密码为：password
 
 ### 3. 配置后端
 ```bash
