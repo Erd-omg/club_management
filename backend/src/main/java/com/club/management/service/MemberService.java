@@ -642,4 +642,39 @@ public class MemberService extends ServiceImpl<MemberMapper, Member> {
         }
         return null;
     }
+    
+    /**
+     * 重置密码（管理员功能）
+     * 将密码重置为学号后6位
+     */
+    public Result<String> resetPassword(Long memberId, Object currentUser) {
+        // 权限检查：只有社长和副社长可以重置密码
+        String userRole = getUserRole(currentUser);
+        if (!"社长".equals(userRole) && !"副社长".equals(userRole)) {
+            return Result.businessError(ErrorCode.FORBIDDEN, "只有社长和副社长可以重置密码");
+        }
+        
+        // 获取成员信息
+        Member member = getById(memberId);
+        if (member == null) {
+            return Result.businessError(ErrorCode.NOT_FOUND, "成员不存在");
+        }
+        
+        // 获取学号后6位作为新密码
+        String stuId = member.getStuId();
+        if (stuId == null || stuId.length() < 6) {
+            return Result.businessError(ErrorCode.BAD_REQUEST, "学号格式不正确");
+        }
+        
+        String newPassword = stuId.substring(stuId.length() - 6);
+        
+        // 加密密码
+        String hashedPassword = passwordEncoder.encode(newPassword);
+        
+        // 更新密码
+        member.setPassword(hashedPassword);
+        updateById(member);
+        
+        return Result.success("密码已重置为学号后6位：" + newPassword);
+    }
 }

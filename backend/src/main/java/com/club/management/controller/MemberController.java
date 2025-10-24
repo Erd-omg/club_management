@@ -103,4 +103,12 @@ public class MemberController {
         return memberService.confirmImport(importData);
     }
 
+    /**
+     * 重置密码（管理员功能）
+     */
+    @PutMapping("/reset-password/{id}")
+    public Result<String> resetPassword(@PathVariable Long id, @RequestAttribute("currentUser") Object currentUser) {
+        return memberService.resetPassword(id, currentUser);
+    }
+
 }

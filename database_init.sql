@@ -166,6 +166,9 @@ INSERT INTO sys_user (id, stu_id, name, password, role) VALUES
 (1, 'admin', '系统管理员', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', '社长');
 
 -- 插入成员数据
+-- 密码规则：学号后6位
+-- 例如：学号20211001的密码为110001（学号后6位）
+-- 所有密码均使用BCrypt加密存储
 INSERT INTO member (id, stu_id, name, gender, college, major, grade, phone, email, join_date, dept_id, role, password, create_by) VALUES
 (1, '20211001', '张三', '男', '计算机学院', '计算机科学与技术', '大三', '13800138001', 'zhangsan@example.com', '2021-09-01', NULL, '社长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
 (2, '20211002', '李四', '女', '计算机学院', '软件工程', '大三', '13800138002', 'lisi@example.com', '2021-09-01', NULL, '副社长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),

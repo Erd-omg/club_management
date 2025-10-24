@@ -176,6 +176,7 @@
       </el-form>
       <span slot="footer" class="dialog-footer">
         <el-button @click="showEdit = false">取 消</el-button>
+        <el-button type="warning" @click="resetPassword" :loading="resetLoading" v-if="canResetPassword">重置密码</el-button>
         <el-button type="primary" @click="updateMember" :loading="updateLoading">确 定</el-button>
       </span>
     </el-dialog>
@@ -183,7 +184,7 @@
 </template>
 
 <script>
-import { getMemberDetail, updateMember, fetchDepts, getMemberActivities } from '@/utils/api';
+import { getMemberDetail, updateMember, fetchDepts, getMemberActivities, resetMemberPassword } from '@/utils/api';
 
 export default {
   name: 'MemberDetail',
@@ -194,6 +195,7 @@ export default {
       activitiesLoading: false,
       showEdit: false,
       updateLoading: false,
+      resetLoading: false,
       deptList: [],
       editForm: {},
       editRules: {
@@ -251,6 +253,11 @@ export default {
     canChangeLeaveDate() {
       const user = this.$store.state.user;
       return ['社长', '副社长', '指导老师'].includes(user.role);
+    },
+    canResetPassword() {
+      const user = this.$store.state.user;
+      // 只有社长和副社长可以重置密码
+      return ['社长', '副社长'].includes(user.role);
     }
   },
   created() {
@@ -308,6 +315,25 @@ export default {
         }
       } finally {
         this.updateLoading = false;
+      }
+    },
+    async resetPassword() {
+      try {
+        await this.$confirm('确定要重置该用户的密码为学号后6位吗？', '重置密码', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        });
+        
+        this.resetLoading = true;
+        const res = await resetMemberPassword(this.memberInfo.id);
+        this.$message.success(res.message || '密码重置成功');
+      } catch (e) {
+        if (e !== 'cancel') {
+          this.$message.error('密码重置失败');
+        }
+      } finally {
+        this.resetLoading = false;
       }
     },
     viewActivity(id) {

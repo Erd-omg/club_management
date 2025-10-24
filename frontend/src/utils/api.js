@@ -23,6 +23,7 @@ export const updateMember = data => request({ url: '/member/update', method: 'pu
 export const deleteMember = id => request({ url: `/member/delete/${id}`, method: 'delete' });
 export const getMemberDetail = id => request({ url: `/member/detail/${id}`, method: 'get' });
 export const getMemberActivities = id => request({ url: `/member/activities/${id}`, method: 'get' });
+export const resetMemberPassword = id => request({ url: `/member/reset-password/${id}`, method: 'put' });
 export const downloadMemberTemplate = () => request({ url: '/member/template', method: 'get', responseType: 'blob' });
 export const previewMemberImport = (file) => {
   const formData = new FormData();
