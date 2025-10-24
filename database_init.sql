@@ -21,8 +21,8 @@ CREATE TABLE IF NOT EXISTS member (
     name VARCHAR(50) NOT NULL COMMENT '姓名',
     gender ENUM('男', '女') NOT NULL COMMENT '性别',
     college VARCHAR(100) NOT NULL COMMENT '学院',
-    major VARCHAR(100) NOT NULL COMMENT '专业',
-    grade ENUM('大一', '大二', '大三', '大四', '研一', '研二', '研三') NOT NULL COMMENT '年级',
+    major VARCHAR(100) COMMENT '专业',
+    grade ENUM('大一', '大二', '大三', '大四', '研一', '研二', '研三') COMMENT '年级',
     phone VARCHAR(20) COMMENT '手机号',
     email VARCHAR(100) COMMENT '邮箱',
     join_date DATE COMMENT '加入日期',
@@ -169,23 +169,23 @@ INSERT INTO sys_user (id, stu_id, name, password, role) VALUES
 -- 密码规则：学号后6位
 -- 例如：学号20211001的密码为110001（学号后6位）
 -- 所有密码均使用BCrypt加密存储
-INSERT INTO member (id, stu_id, name, gender, college, major, grade, phone, email, join_date, dept_id, role, password, create_by) VALUES
-(1, '20211001', '张三', '男', '计算机学院', '计算机科学与技术', '大三', '13800138001', 'zhangsan@example.com', '2021-09-01', NULL, '社长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
-(2, '20211002', '李四', '女', '计算机学院', '软件工程', '大三', '13800138002', 'lisi@example.com', '2021-09-01', NULL, '副社长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
-(3, '20211003', '王五', '男', '计算机学院', '网络工程', '大二', '13800138003', 'wangwu@example.com', '2021-09-01', 2, '部长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
-(4, '20211004', '赵六', '女', '计算机学院', '信息安全', '大二', '13800138004', 'zhaoliu@example.com', '2021-09-01', 2, '副部长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
-(5, '20211005', '钱七', '男', '计算机学院', '数据科学与大数据技术', '大一', '13800138005', 'qianqi@example.com', '2021-09-01', 2, '干事', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
-(6, '20211006', '孙八', '女', '计算机学院', NULL, NULL, '13800138006', 'sunba@example.com', '2021-09-01', NULL, '指导老师', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
-(7, '20211007', '周九', '男', '计算机学院', '计算机科学与技术', '大二', '13800138007', 'zhoujiu@example.com', '2021-09-01', 3, '部长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
-(8, '20211008', '吴十', '女', '计算机学院', '软件工程', '大二', '13800138008', 'wushi@example.com', '2021-09-01', 3, '副部长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
-(9, '20211009', '郑十一', '男', '计算机学院', '网络工程', '大一', '13800138009', 'zhengshiyi@example.com', '2021-09-01', 3, '干事', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
-(10, '20211010', '王十二', '女', '计算机学院', '信息安全', '大一', '13800138010', 'wangshier@example.com', '2021-09-01', 4, '部长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
-(11, '20211011', '李十三', '男', '计算机学院', '数据科学与大数据技术', '大一', '13800138011', 'lishisan@example.com', '2021-09-01', 4, '副部长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
-(12, '20211012', '张十四', '女', '计算机学院', '人工智能', '大一', '13800138012', 'zhangshisi@example.com', '2021-09-01', 4, '干事', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
-(13, '20211013', '刘十五', '男', '计算机学院', '计算机科学与技术', '大一', '13800138013', 'liushiwu@example.com', '2021-09-01', 1, '部长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
-(14, '20211014', '陈十六', '女', '计算机学院', '软件工程', '大一', '13800138014', 'chenshiliu@example.com', '2021-09-01', 1, '副部长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
-(15, '20211015', '杨十七', '男', '计算机学院', '网络工程', '大一', '13800138015', 'yangshiqi@example.com', '2021-09-01', 1, '干事', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
-(16, '20211016', '黄十八', '女', '计算机学院', '信息安全', '大一', '13800138016', 'huangshiba@example.com', '2021-09-01', 2, '干事', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1);
+INSERT INTO member (id, stu_id, name, gender, college, major, grade, phone, email, join_date, leave_date, dept_id, role, password, create_by) VALUES
+(1, '20211001', '张三', '男', '计算机学院', '计算机科学与技术', '大三', '13800138001', 'zhangsan@example.com', '2021-09-01', NULL, NULL, '社长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
+(2, '20211002', '李四', '女', '计算机学院', '软件工程', '大三', '13800138002', 'lisi@example.com', '2021-09-01', NULL, NULL, '副社长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
+(3, '20211003', '王五', '男', '计算机学院', '网络工程', '大二', '13800138003', 'wangwu@example.com', '2021-09-01', NULL, 2, '部长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
+(4, '20211004', '赵六', '女', '计算机学院', '信息安全', '大二', '13800138004', 'zhaoliu@example.com', '2021-09-01', NULL, 2, '副部长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
+(5, '20211005', '钱七', '男', '计算机学院', '数据科学与大数据技术', '大一', '13800138005', 'qianqi@example.com', '2021-09-01', NULL, 2, '干事', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
+(6, '20211006', '孙八', '女', '计算机学院', NULL, NULL, '13800138006', 'sunba@example.com', '2021-09-01', NULL, NULL, '指导老师', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
+(7, '20211007', '周九', '男', '计算机学院', '计算机科学与技术', '大二', '13800138007', 'zhoujiu@example.com', '2021-09-01', NULL, 3, '部长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
+(8, '20211008', '吴十', '女', '计算机学院', '软件工程', '大二', '13800138008', 'wushi@example.com', '2021-09-01', NULL, 3, '副部长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
+(9, '20211009', '郑十一', '男', '计算机学院', '网络工程', '大一', '13800138009', 'zhengshiyi@example.com', '2021-09-01', NULL, 3, '干事', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
+(10, '20211010', '王十二', '女', '计算机学院', '信息安全', '大一', '13800138010', 'wangshier@example.com', '2021-09-01', NULL, 4, '部长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
+(11, '20211011', '李十三', '男', '计算机学院', '数据科学与大数据技术', '大一', '13800138011', 'lishisan@example.com', '2021-09-01', NULL, 4, '副部长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
+(12, '20211012', '张十四', '女', '计算机学院', '人工智能', '大一', '13800138012', 'zhangshisi@example.com', '2021-09-01', NULL, 4, '干事', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
+(13, '20211013', '刘十五', '男', '计算机学院', '计算机科学与技术', '大一', '13800138013', 'liushiwu@example.com', '2021-09-01', NULL, 1, '部长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
+(14, '20211014', '陈十六', '女', '计算机学院', '软件工程', '大一', '13800138014', 'chenshiliu@example.com', '2021-09-01', NULL, 1, '副部长', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
+(15, '20211015', '杨十七', '男', '计算机学院', '网络工程', '大一', '13800138015', 'yangshiqi@example.com', '2021-09-01', NULL, 1, '干事', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1),
+(16, '20211016', '黄十八', '女', '计算机学院', '信息安全', '大一', '13800138016', 'huangshiba@example.com', '2021-09-01', NULL, 2, '干事', '$2a$10$6jpu.5mC7/FTxoKO9Fr5W.IxAbK3gkyNeVQg62GNAEoV6xOuF7o5q', 1);
 
 -- 插入活动数据
 INSERT INTO activity (id, name, description, location, type, start_time, end_time, status, create_by) VALUES
