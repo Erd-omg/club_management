@@ -1,28 +1,33 @@
 <template>
   <div class="app-container">
-    <div class="toolbar" style="margin-bottom: 20px;">
-      <el-input v-model="query.name" placeholder="姓名" clearable style="width:160px;" />
-      <el-input v-model="query.stuId" placeholder="学号" clearable style="width:160px; margin-left:8px;" />
-      <el-select v-model="query.deptId" placeholder="部门" clearable style="width:140px; margin-left:8px;">
-        <el-option 
-          v-for="dept in deptList" 
-          :key="dept.id" 
-          :label="dept.name" 
-          :value="dept.id" 
-        />
-      </el-select>
-      <el-select v-model="query.role" placeholder="角色" clearable style="width:140px; margin-left:8px;">
-        <el-option label="社长" value="社长" />
-        <el-option label="副社长" value="副社长" />
-        <el-option label="部长" value="部长" />
-        <el-option label="副部长" value="副部长" />
-        <el-option label="干事" value="干事" />
-        <el-option label="指导老师" value="指导老师" />
-      </el-select>
-      <el-button type="primary" @click="load" style="margin-left:8px;">查询</el-button>
-      <div class="actions">
+    <div style="margin-bottom: 20px;">
+      <div style="text-align: right; margin-bottom: 8px;">
         <el-button type="success" @click="showImport=true" v-if="canEditMembers">批量导入</el-button>
-        <el-button type="primary" @click="showAdd=true" v-if="canEditMembers">新增</el-button>
+      </div>
+      <div class="toolbar">
+        <el-input v-model="query.name" placeholder="姓名" clearable style="width:160px;" />
+        <el-input v-model="query.stuId" placeholder="学号" clearable style="width:160px; margin-left:8px;" />
+        <el-select v-model="query.deptId" placeholder="部门" clearable style="width:140px; margin-left:8px;">
+          <el-option 
+            v-for="dept in deptList" 
+            :key="dept.id" 
+            :label="dept.name" 
+            :value="dept.id" 
+          />
+        </el-select>
+        <el-select v-model="query.role" placeholder="角色" clearable style="width:140px; margin-left:8px;">
+          <el-option label="社长" value="社长" />
+          <el-option label="副社长" value="副社长" />
+          <el-option label="部长" value="部长" />
+          <el-option label="副部长" value="副部长" />
+          <el-option label="干事" value="干事" />
+          <el-option label="指导老师" value="指导老师" />
+        </el-select>
+        <el-button type="primary" @click="load" style="margin-left:8px;">查询</el-button>
+        <el-button @click="resetQuery" style="margin-left:8px;">重置</el-button>
+        <div class="actions">
+          <el-button type="primary" @click="showAdd=true" v-if="canEditMembers">新增</el-button>
+        </div>
       </div>
     </div>
 
@@ -36,18 +41,10 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column prop="name" label="姓名">
-        <template slot="header">
-          <span>姓名</span>
-          <div class="sort-buttons">
-            <i class="el-icon-caret-top" @click="sortBy('name', 'asc')" :class="{ active: query.sortField === 'name' && query.sortOrder === 'asc' }"></i>
-            <i class="el-icon-caret-bottom" @click="sortBy('name', 'desc')" :class="{ active: query.sortField === 'name' && query.sortOrder === 'desc' }"></i>
-          </div>
-        </template>
-      </el-table-column>
+      <el-table-column prop="name" label="姓名" />
       <el-table-column prop="deptName" label="部门">
         <template slot-scope="scope">
-          {{ scope.row.deptName || '未分配' }}
+          {{ getDepartmentDisplay(scope.row) }}
         </template>
       </el-table-column>
       <el-table-column prop="role" label="角色" />
@@ -60,11 +57,11 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="200" v-if="canEditMembers">
+      <el-table-column label="操作" width="200">
         <template slot-scope="scope">
           <el-button type="text" @click="viewDetail(scope.row.id)">详情</el-button>
-          <el-button type="text" @click="editMember(scope.row)">编辑</el-button>
-          <el-button type="text" @click="remove(scope.row.id)" style="color: #f56c6c">删除</el-button>
+          <el-button v-if="canEditMembers" type="text" @click="editMember(scope.row)">编辑</el-button>
+          <el-button v-if="canEditMembers" type="text" @click="remove(scope.row.id)" style="color: #f56c6c">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -102,7 +99,8 @@
             <el-option label="研三" value="研三" />
           </el-select>
         </el-form-item>
-        <el-form-item label="手机" prop="phone"><el-input v-model="form.phone" /></el-form-item>
+          <el-form-item label="手机" prop="phone">
+            <el-input v-model="form.phone" @input="validatePhone" /></el-form-item>
         <el-form-item label="邮箱" prop="email"><el-input v-model="form.email" /></el-form-item>
         <el-form-item label="部门" prop="deptId">
           <el-select v-model="form.deptId" style="width: 100%">
@@ -135,15 +133,11 @@
     </el-dialog>
 
     <!-- 批量导入对话框 -->
-    <el-dialog title="批量导入社员" :visible.sync="showImport" width="900px" :close-on-click-modal="false" :modal-append-to-body="true" top="5vh">
+    <el-dialog title="批量导入社员" :visible.sync="showImport" width="750px" :close-on-click-modal="false" :modal-append-to-body="true" top="5vh">
       <div class="import-content">
-        <el-alert
-          title="批量导入说明"
-          type="info"
-          :closable="false"
-          style="margin-bottom: 16px;"
-        >
-          <div slot="description">
+        <div class="import-instructions" style="margin-bottom: 16px; padding: 16px; background-color: #f4f4f5; border-radius: 4px; border-left: 4px solid #409eff;">
+          <h4 style="margin: 0 0 12px 0; color: #409eff;">批量导入说明</h4>
+          <div style="line-height: 1.6;">
             <p><strong>导入步骤：</strong></p>
             <p>1. 点击"下载模板"按钮，下载Excel模板文件</p>
             <p>2. 按照模板格式填写社员信息（包含示例数据）</p>
@@ -151,18 +145,21 @@
             <p>4. 点击"选择文件"按钮，上传填写好的Excel文件</p>
             <p>5. 预览数据后确认导入</p>
             <p><strong>注意事项：</strong></p>
-            <p>• 学号必须唯一，不能重复</p>
+            <p>• 学号必须为8位数字，且唯一，不能重复</p>
+            <p>• 初始密码自动设置为学号后6位</p>
             <p>• 手机号必须是11位数字</p>
-            <p>• 年级必须从下拉选项中选择（大一、大二、大三、大四、研一、研二、研三）</p>
-            <p>• 部门ID请参考系统内的部门编号</p>
+            <p>• 年级请选择：大一、大二、大三、大四、研一、研二、研三</p>
+            <p>• 部门ID请参考模板中的"说明"部分</p>
             <p>• 角色请选择：社长、副社长、部长、副部长、干事、指导老师</p>
+            <p>• 系统将同时创建社员档案和登录账号</p>
           </div>
-        </el-alert>
+        </div>
         
         <div class="import-actions">
           <el-button type="primary" @click="downloadTemplate">下载模板</el-button>
           <el-upload
             ref="upload"
+            action="#"
             :auto-upload="false"
             :on-change="handleFileChange"
             :show-file-list="false"
@@ -225,24 +222,34 @@ export default {
       deptList: [],
       form: { 
         stuId: '', name: '', gender: '', college: '', major: '', grade: '', 
-        phone: '', email: '', deptId: 1, role: '干事', joinDate: '' 
+        phone: '', email: '', deptId: 1, role: '干事', joinDate: new Date().toISOString().split('T')[0]
       },
       importFile: null,
       previewData: [],
       previewLoading: false,
       importLoading: false,
       rules: {
-        stuId: [{ required: true, message: '请输入学号', trigger: 'blur' }],
+        stuId: [
+          { required: true, message: '请输入学号', trigger: 'blur' },
+          { pattern: /^\d{8}$/, message: '学号必须为8位数字', trigger: 'blur' }
+        ],
         name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
         gender: [{ required: true, message: '请选择性别', trigger: 'change' }],
         college: [{ required: true, message: '请输入学院', trigger: 'blur' }],
         major: [{ required: true, message: '请输入专业', trigger: 'blur' }],
         grade: [{ required: true, message: '请选择年级', trigger: 'change' }],
-        phone: [
-          { required: true, message: '请输入手机号', trigger: 'blur' },
-          { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的11位手机号', trigger: 'blur' }
+          phone: [
+            { required: true, message: '请输入手机号', trigger: 'blur' },
+            { 
+              pattern: /^1[3-9]\d{9}$/, 
+              message: '请输入正确的11位手机号', 
+              trigger: 'blur' 
+            }
+          ],
+        email: [
+          { required: true, message: '请输入邮箱', trigger: 'blur' },
+          { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
         ],
-        email: [{ required: true, message: '请输入邮箱', trigger: 'blur' }],
         deptId: [{ required: true, message: '请选择部门', trigger: 'change' }],
         role: [{ required: true, message: '请选择角色', trigger: 'change' }],
         joinDate: [{ required: true, message: '请选择入社时间', trigger: 'change' }]
@@ -251,14 +258,54 @@ export default {
   },
   computed: {
     canEditMembers() {
-      return this.$store.getters.canEditMembers;
+      const user = this.$store.state.user;
+      // 副部长和指导老师可以查看但不能编辑
+      return user && ['社长', '副社长', '部长'].includes(user.role);
     }
   },
   created() { 
+    this.initFromQuery();
     this.load(); 
     this.loadDepts();
   },
   methods: {
+    initFromQuery() {
+      const query = this.$route.query;
+      if (query.page) this.page = parseInt(query.page);
+      if (query.size) this.size = parseInt(query.size);
+      if (query.name) this.query.name = query.name;
+      if (query.stuId) this.query.stuId = query.stuId;
+      if (query.deptId) this.query.deptId = parseInt(query.deptId);
+      if (query.role) this.query.role = query.role;
+      if (query.sortField) this.query.sortField = query.sortField;
+      if (query.sortOrder) this.query.sortOrder = query.sortOrder;
+    },
+    updateQuery() {
+      const query = {
+        page: this.page,
+        size: this.size,
+        ...this.query
+      };
+      // 移除空值
+      Object.keys(query).forEach(key => {
+        if (query[key] === null || query[key] === '' || query[key] === undefined) {
+          delete query[key];
+        }
+      });
+      
+      // 检查query是否发生变化，避免重复导航
+      const currentQuery = this.$route.query;
+      const hasChanged = JSON.stringify(query) !== JSON.stringify(currentQuery);
+      
+      if (hasChanged) {
+        this.$router.replace({ query }).catch(err => {
+          // 忽略重复导航错误
+          if (err.name !== 'NavigationDuplicated') {
+            console.error('路由导航错误:', err);
+          }
+        });
+      }
+    },
     async load() {
       this.loading = true;
       try {
@@ -269,6 +316,7 @@ export default {
         this.list = pageData.records || [];
         this.total = pageData.total || 0;
         console.log('社员列表:', this.list);
+        this.updateQuery();
       } catch (e) {
         console.error('加载社员数据失败:', e);
         this.$message.error('加载社员数据失败：' + (e.message || '未知错误'));
@@ -280,6 +328,21 @@ export default {
       this.query.sortField = field;
       this.query.sortOrder = order;
       this.load();
+    },
+    resetQuery() {
+      this.query = { name: '', stuId: '', deptId: null, role: '', sortField: '', sortOrder: '' };
+      this.page = 1;
+      this.load();
+    },
+    validatePhone() {
+      this.$refs.form && this.$refs.form.clearValidate('phone');
+    },
+    getDepartmentDisplay(member) {
+      // 社长、副社长、指导老师没有部门
+      if (['社长', '副社长', '指导老师'].includes(member.role)) {
+        return '无';
+      }
+      return member.deptName || '未分配';
     },
     async loadDepts() {
       try {
@@ -305,8 +368,8 @@ export default {
     },
     async remove(id) {
       try {
-        await this.$confirm('确定要删除该成员吗？', '提示', {
-          confirmButtonText: '确定',
+        await this.$confirm('删除该成员将同时删除其所有活动参与记录和审批记录，是否确定删除？', '删除确认', {
+          confirmButtonText: '确定删除',
           cancelButtonText: '取消',
           type: 'warning'
         });
@@ -382,6 +445,12 @@ export default {
         return this.$message.warning('没有可导入的数据');
       }
       
+      // 检查是否有错误数据
+      const hasError = this.previewData.some(item => !item.valid);
+      if (hasError) {
+        return this.$message.warning('数据中包含错误信息，请修正后再导入');
+      }
+      
       this.importLoading = true;
       try {
         const res = await confirmMemberImport(this.previewData);
@@ -393,7 +462,7 @@ export default {
       } finally {
         this.importLoading = false;
       }
-    }
+    },
   }
 };
 </script>

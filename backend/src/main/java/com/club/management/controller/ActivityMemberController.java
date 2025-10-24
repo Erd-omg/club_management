@@ -37,12 +37,6 @@ public class ActivityMemberController {
         return activityMemberService.updateSignupStatus(id, signupStatus, currentUser);
     }
 
-    @PutMapping("/attendance-status/{id}")
-    public Result<String> updateAttendanceStatus(@PathVariable Long id,
-                                                @RequestParam Integer attendanceStatus,
-                                                @RequestAttribute("currentUser") Object currentUser) {
-        return activityMemberService.updateAttendanceStatus(id, attendanceStatus, currentUser);
-    }
 
     @DeleteMapping("/{id}")
     public Result<String> deleteSignup(@PathVariable Long id,

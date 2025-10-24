@@ -33,8 +33,10 @@ public class MemberController {
             @RequestParam(required = false) String stuId,
             @RequestParam(required = false) Long deptId,
             @RequestParam(required = false) String role,
+            @RequestParam(required = false) String sortField,
+            @RequestParam(required = false) String sortOrder,
             @RequestAttribute("currentUser") Object currentUser) {
-        return memberService.getMemberPage(page, size, name, stuId, deptId, role, currentUser);
+        return memberService.getMemberPage(page, size, name, stuId, deptId, role, sortField, sortOrder, currentUser);
     }
 
     /**
@@ -100,4 +102,5 @@ public class MemberController {
     public Result<String> confirmImport(@RequestBody List<Map<String, Object>> importData) {
         return memberService.confirmImport(importData);
     }
+
 }

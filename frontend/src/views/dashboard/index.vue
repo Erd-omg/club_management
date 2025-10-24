@@ -164,6 +164,7 @@
 <script>
 import * as echarts from 'echarts';
 import { fetchMembers, fetchActivities, fetchDeptCards } from '@/utils/api';
+import request from '@/utils/request';
 
 function formatDateISO(dt) {
   const pad = n => (n < 10 ? '0' + n : '' + n);
@@ -241,14 +242,22 @@ export default {
         }
       } catch(e) {}
 
-      // 我参与的活动 - 使用与loadMyActivities相同的数据源
+      // 我参与的活动 - 获取用户实际参与的活动
       try {
-        const myJoin = await fetchActivities(1, 10, { memberId: this.user.id });
-        this.stats.myJoin = (myJoin && myJoin.data && myJoin.data.total) ? myJoin.data.total : 0;
-        // 同时更新myActivities，确保数据一致性
-        this.myActivities = (myJoin.data && myJoin.data.records) || [];
+        // 先获取所有活动
+        const allActivities = await fetchActivities(1, 100);
+        const activities = (allActivities && allActivities.data && allActivities.data.records) || [];
+        
+        // 然后过滤出用户参与的活动
+        const myActivityIds = await this.getMyActivityIds();
+        const myJoinActivities = activities.filter(activity => myActivityIds.includes(activity.id));
+        
+        this.stats.myJoin = myJoinActivities.length;
+        this.myActivities = myJoinActivities.slice(0, 5);
       } catch(e) {
         console.error('加载我参与的活动失败:', e);
+        this.stats.myJoin = 0;
+        this.myActivities = [];
       }
     },
     async loadPendingActivities() {
@@ -280,13 +289,51 @@ export default {
       if (this.myActivities.length > 0) return;
       
       try {
-        // 获取用户参与的活动
-        const res = await fetchActivities(1, 10, { memberId: this.user.id });
-        console.log('我的活动API响应:', res);
-        this.myActivities = (res.data && res.data.records) || [];
+        // 获取所有活动
+        const allActivities = await fetchActivities(1, 100);
+        const activities = (allActivities && allActivities.data && allActivities.data.records) || [];
+        
+        // 获取用户参与的活动ID
+        const myActivityIds = await this.getMyActivityIds();
+        
+        // 过滤出用户参与的活动
+        this.myActivities = activities.filter(activity => myActivityIds.includes(activity.id)).slice(0, 5);
         console.log('我的活动列表:', this.myActivities);
       } catch(e) {
         console.error('加载我的活动失败:', e);
+      }
+    },
+    async getMyActivityIds() {
+      try {
+        // 通过活动成员关系获取用户参与的活动ID
+        const memberId = this.user.id;
+        const activities = await fetchActivities(1, 100);
+        const allActivities = (activities && activities.data && activities.data.records) || [];
+        
+        const myActivityIds = [];
+        for (const activity of allActivities) {
+          try {
+            const members = await request({ 
+              url: `/activity/members/${activity.id}`, 
+              method: 'get' 
+            });
+            
+            if (members && members.data) {
+              const isParticipated = members.data.some(member => member.memberId === memberId);
+              if (isParticipated) {
+                myActivityIds.push(activity.id);
+              }
+            }
+          } catch(e) {
+            // 忽略单个活动成员查询失败
+            continue;
+          }
+        }
+        
+        return myActivityIds;
+      } catch(e) {
+        console.error('获取我的活动ID失败:', e);
+        return [];
       }
     },
     async loadCharts() {
@@ -299,6 +346,12 @@ export default {
     },
     async initDeptPieChart() {
       try {
+        // 确保DOM元素存在且可见
+        if (!this.$refs.deptPie) {
+          console.warn('饼图容器不存在，跳过初始化');
+          return;
+        }
+        
         const res = await fetchDeptCards();
         const deptData = res.data || [];
         this.deptStats = deptData.map(dept => ({
@@ -306,25 +359,30 @@ export default {
           value: dept.memberCount || 0
         }));
         
-        const pie = echarts.init(this.$refs.deptPie);
-        pie.setOption({
-          tooltip: {
-            trigger: 'item',
-            formatter: '{a} <br/>{b}: {c} ({d}%)'
-          },
-          series: [{
-            name: '部门成员',
-            type: 'pie',
-            radius: '50%',
-            data: this.deptStats,
-            emphasis: {
-              itemStyle: {
-                shadowBlur: 10,
-                shadowOffsetX: 0,
-                shadowColor: 'rgba(0, 0, 0, 0.5)'
-              }
-            }
-          }]
+        // 使用nextTick确保DOM完全渲染
+        this.$nextTick(() => {
+          if (this.$refs.deptPie && this.$refs.deptPie.offsetWidth > 0) {
+            const pie = echarts.init(this.$refs.deptPie);
+            pie.setOption({
+              tooltip: {
+                trigger: 'item',
+                formatter: '{a} <br/>{b}: {c} ({d}%)'
+              },
+              series: [{
+                name: '部门成员',
+                type: 'pie',
+                radius: '50%',
+                data: this.deptStats,
+                emphasis: {
+                  itemStyle: {
+                    shadowBlur: 10,
+                    shadowOffsetX: 0,
+                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+                  }
+                }
+              }]
+            });
+          }
         });
       } catch(e) {
         console.error('加载部门统计失败:', e);
@@ -332,6 +390,12 @@ export default {
     },
     async initActivityTypeChart() {
       try {
+        // 确保DOM元素存在且可见
+        if (!this.$refs.typeBar) {
+          console.warn('图表容器不存在，跳过初始化');
+          return;
+        }
+        
         const res = await fetchActivities(1, 100, {});
         const activities = (res.data && res.data.records) || [];
         
@@ -346,29 +410,34 @@ export default {
           count
         }));
         
-        const bar = echarts.init(this.$refs.typeBar);
-        bar.setOption({
-          tooltip: {
-            trigger: 'axis',
-            axisPointer: {
-              type: 'shadow'
-            }
-          },
-          xAxis: {
-            type: 'category',
-            data: this.activityTypeStats.map(item => item.type)
-          },
-          yAxis: {
-            type: 'value'
-          },
-          series: [{
-            name: '活动数量',
-            type: 'bar',
-            data: this.activityTypeStats.map(item => item.count),
-            itemStyle: {
-              color: '#4167b1'
-            }
-          }]
+        // 使用nextTick确保DOM完全渲染
+        this.$nextTick(() => {
+          if (this.$refs.typeBar && this.$refs.typeBar.offsetWidth > 0) {
+            const bar = echarts.init(this.$refs.typeBar);
+            bar.setOption({
+              tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                  type: 'shadow'
+                }
+              },
+              xAxis: {
+                type: 'category',
+                data: this.activityTypeStats.map(item => item.type)
+              },
+              yAxis: {
+                type: 'value'
+              },
+              series: [{
+                name: '活动数量',
+                type: 'bar',
+                data: this.activityTypeStats.map(item => item.count),
+                itemStyle: {
+                  color: '#4167b1'
+                }
+              }]
+            });
+          }
         });
       } catch(e) {
         console.error('加载活动类型统计失败:', e);
@@ -415,6 +484,8 @@ export default {
   margin-right: 16px;
   font-size: 24px;
   color: white;
+  flex-shrink: 0;
+  aspect-ratio: 1;
 }
 
 .stat-icon.members {

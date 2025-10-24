@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.club.management.entity.Dept;
 import com.club.management.entity.Member;
+import com.club.management.entity.SysUser;
 import com.club.management.mapper.DeptMapper;
 import com.club.management.mapper.MemberMapper;
 import com.club.management.mapper.ActivityMapper;
@@ -58,7 +59,6 @@ public class DeptService extends ServiceImpl<DeptMapper, Dept> {
         deptWithCount.put("id", dept.getId());
         deptWithCount.put("name", dept.getName());
         deptWithCount.put("intro", dept.getIntro());
-        deptWithCount.put("sort", dept.getSort());
         deptWithCount.put("createTime", dept.getCreateTime());
         deptWithCount.put("memberCount", memberCount);
         
@@ -109,7 +109,24 @@ public class DeptService extends ServiceImpl<DeptMapper, Dept> {
     /**
      * 删除部门
      */
-    public Result<String> deleteDept(Long id) {
+    public Result<String> deleteDept(Long id, Object currentUser) {
+        // 权限验证：只有社长和副社长可以删除部门
+        if (currentUser instanceof Member) {
+            Member member = (Member) currentUser;
+            String role = member.getRole();
+            if (!"社长".equals(role) && !"副社长".equals(role)) {
+                return Result.businessError(ErrorCode.FORBIDDEN, "只有社长和副社长可以删除部门");
+            }
+        } else if (currentUser instanceof SysUser) {
+            SysUser sysUser = (SysUser) currentUser;
+            String role = sysUser.getRole();
+            if (!"社长".equals(role) && !"副社长".equals(role)) {
+                return Result.businessError(ErrorCode.FORBIDDEN, "只有社长和副社长可以删除部门");
+            }
+        } else {
+            return Result.businessError(ErrorCode.UNAUTHORIZED, "用户信息无效");
+        }
+
         // 检查部门下是否还有成员
         long memberCount = memberMapper.selectCount(
                 new QueryWrapper<Member>().eq("dept_id", id));

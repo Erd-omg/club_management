@@ -49,11 +49,38 @@ export const approveActivity = (activityId, pass, rejectReason) => request({
   params: { pass, rejectReason } 
 });
 
+// Activity Attachment
+export const uploadAttachment = (activityId, formData) => request({ 
+  url: `/activity/${activityId}/attachment/upload`, 
+  method: 'post', 
+  data: formData, 
+  headers: { 'Content-Type': 'multipart/form-data' } 
+});
+export const getAttachmentList = activityId => request({ url: `/activity/${activityId}/attachment/list`, method: 'get' });
+export const downloadAttachment = (activityId, attachmentId) => request({ 
+  url: `/activity/${activityId}/attachment/${attachmentId}/download`, 
+  method: 'get', 
+  responseType: 'blob' 
+});
+export const previewAttachment = (activityId, attachmentId) => request({ 
+  url: `/activity/${activityId}/attachment/${attachmentId}/preview`, 
+  method: 'get', 
+  responseType: 'blob' 
+});
+export const deleteAttachment = (activityId, attachmentId) => request({ 
+  url: `/activity/${activityId}/attachment/${attachmentId}`, 
+  method: 'delete' 
+});
+export const updateAttachment = (activityId, attachmentId, data) => request({ 
+  url: `/activity/${activityId}/attachment/${attachmentId}`, 
+  method: 'put', 
+  data 
+});
+
 // Activity Member (Signup)
 export const signupActivity = (activityId) => request({ url: `/activity-member/signup/${activityId}`, method: 'post' });
 export const getActivitySignupList = (activityId) => request({ url: `/activity-member/list/${activityId}`, method: 'get' });
 export const updateSignupStatus = (id, signupStatus) => request({ url: `/activity-member/signup-status/${id}`, method: 'put', params: { signupStatus } });
-export const updateAttendanceStatus = (id, attendanceStatus) => request({ url: `/activity-member/attendance-status/${id}`, method: 'put', params: { attendanceStatus } });
 export const deleteSignup = (id) => request({ url: `/activity-member/${id}`, method: 'delete' });
 export const checkSignupStatus = (activityId) => request({ url: `/activity-member/check/${activityId}`, method: 'get' });
 

@@ -32,8 +32,8 @@
             <el-form-item label="开始时间" prop="startTime" required>
               <el-date-picker 
                 v-model="form.startTime" 
-                type="date" 
-                value-format="yyyy-MM-dd" 
+                type="datetime" 
+                value-format="yyyy-MM-dd HH:mm:ss" 
                 style="width: 100%" 
               />
             </el-form-item>
@@ -42,8 +42,8 @@
             <el-form-item label="结束时间" prop="endTime" required>
               <el-date-picker 
                 v-model="form.endTime" 
-                type="date" 
-                value-format="yyyy-MM-dd" 
+                type="datetime" 
+                value-format="yyyy-MM-dd HH:mm:ss" 
                 style="width: 100%" 
               />
             </el-form-item>
@@ -65,6 +65,13 @@
           />
         </el-form-item>
 
+        <el-form-item label="活动附件" v-if="form.id">
+          <AttachmentUpload 
+            :activity-id="form.id"
+            @upload-success="handleUploadSuccess"
+          />
+          <AttachmentList ref="attachmentList" :activity-id="form.id" />
+        </el-form-item>
 
         <el-form-item label="审批人" prop="approverIds" required v-if="canSetApprovers">
           <el-select 
@@ -108,9 +115,15 @@
 
 <script>
 import { getActivityDetail, updateActivity, searchUsers, fetchDepts, setupActivityRelations, getActivityApprovers, getActivityDepts } from '@/utils/api';
+import AttachmentUpload from '@/components/AttachmentUpload.vue';
+import AttachmentList from '@/components/AttachmentList.vue';
 
 export default {
   name: 'ActivityEdit',
+  components: {
+    AttachmentUpload,
+    AttachmentList
+  },
   data() {
     return {
       form: {
@@ -144,7 +157,10 @@ export default {
   computed: {
     canSetApprovers() {
       const user = this.$store.state.user;
-      return user && ['社长', '副社长', '指导老师'].includes(user.role);
+      return user && ['社长', '副社长', '部长', '指导老师'].includes(user.role);
+    },
+    activityId() {
+      return this.form.id;
     }
   },
   created() {
@@ -158,15 +174,24 @@ export default {
         const res = await getActivityDetail(activityId);
         const activity = res.data || {};
         
+        // 格式化时间，确保格式为 yyyy-MM-dd HH:mm:ss
+        const formatDateTime = (dateTimeStr) => {
+          if (!dateTimeStr) return '';
+          // 如果包含'T'，将其替换为空格
+          if (dateTimeStr.includes('T')) {
+            return dateTimeStr.replace('T', ' ').substring(0, 19);
+          }
+          return dateTimeStr;
+        };
+        
         this.form = {
           id: activity.id,
           name: activity.name || '',
           type: activity.type || '',
-          startTime: activity.startTime || '',
-          endTime: activity.endTime || '',
+          startTime: formatDateTime(activity.startTime),
+          endTime: formatDateTime(activity.endTime),
           location: activity.location || '',
           description: activity.description || '',
-          signMethod: activity.signMethod || '',
           approverIds: [],
           deptIds: []
         };
@@ -226,8 +251,15 @@ export default {
       if (!query) return;
       this.approverSearchLoading = true;
       try {
-        const res = await searchUsers(query, '指导老师');
-        this.approverOptions = res.data || [];
+        // 搜索社长、副社长、指导老师作为审批人
+        const results = [];
+        for (const role of ['社长', '副社长', '指导老师']) {
+          const res = await searchUsers(query, role);
+          if (res.data && res.data.length > 0) {
+            results.push(...res.data);
+          }
+        }
+        this.approverOptions = results;
       } catch (e) {
         this.$message.error('搜索审批人失败');
       } finally {
@@ -244,11 +276,10 @@ export default {
           id: this.form.id,
           name: this.form.name,
           type: this.form.type,
-          startTime: this.form.startTime,
-          endTime: this.form.endTime,
+          startTime: this.form.startTime ? this.form.startTime.replace(' ', 'T') : null,
+          endTime: this.form.endTime ? this.form.endTime.replace(' ', 'T') : null,
           location: this.form.location,
-          description: this.form.description,
-          signMethod: this.form.signMethod
+          description: this.form.description
         };
         
         console.log('发送的更新数据:', updateData);
@@ -273,6 +304,13 @@ export default {
         }
       } finally {
         this.updateLoading = false;
+      }
+    },
+    handleUploadSuccess(attachments) {
+      this.$message.success(`成功上传 ${attachments.length} 个文件`);
+      // 刷新附件列表
+      if (this.$refs.attachmentList) {
+        this.$refs.attachmentList.loadAttachments();
       }
     }
   }

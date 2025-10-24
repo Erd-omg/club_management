@@ -68,7 +68,6 @@ public class ActivityMemberService extends ServiceImpl<ActivityMemberMapper, Act
             activityMember.setMemberId(memberId);
             activityMember.setSignupTime(LocalDateTime.now());
             activityMember.setSignupStatus(0); // 0-已报名
-            activityMember.setAttendanceStatus(0); // 0-未出席
 
             save(activityMember);
             return Result.success("报名成功");
@@ -125,30 +124,6 @@ public class ActivityMemberService extends ServiceImpl<ActivityMemberMapper, Act
         }
     }
 
-    /**
-     * 更新出席状态
-     */
-    public Result<String> updateAttendanceStatus(Long id, Integer attendanceStatus, Object currentUser) {
-        try {
-            // 权限检查：只有社长、副社长、部长可以更新出席状态
-            String userRole = getUserRole(currentUser);
-            if (!"社长".equals(userRole) && !"副社长".equals(userRole) && !"部长".equals(userRole)) {
-                return Result.businessError(ErrorCode.FORBIDDEN, "权限不足");
-            }
-
-            ActivityMember activityMember = getById(id);
-            if (activityMember == null) {
-                return Result.businessError(ErrorCode.NOT_FOUND, "报名记录不存在");
-            }
-
-            activityMember.setAttendanceStatus(attendanceStatus);
-            updateById(activityMember);
-            return Result.success("更新成功");
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Result.businessError(ErrorCode.SYSTEM_ERROR, "更新失败: " + e.getMessage());
-        }
-    }
 
     /**
      * 删除报名记录

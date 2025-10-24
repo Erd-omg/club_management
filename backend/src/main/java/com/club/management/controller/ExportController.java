@@ -23,8 +23,9 @@ public class ExportController {
      * 生成导出包
      */
     @PostMapping("/generate")
-    public Result<Map<String, Object>> generateExport(@RequestBody Map<String, Object> params) {
-        return exportService.generateExport(params);
+    public Result<Map<String, Object>> generateExport(@RequestBody Map<String, Object> params, 
+                                                      @RequestAttribute("currentUser") Object currentUser) {
+        return exportService.generateExport(params, currentUser);
     }
 
     /**
@@ -39,8 +40,18 @@ public class ExportController {
      * 下载导出文件
      */
     @GetMapping("/download/{id}")
-    public void downloadExportFile(@PathVariable String id, HttpServletResponse response) {
-        exportService.downloadExportFile(id, response);
+    public void downloadExportFile(@PathVariable String id, HttpServletResponse response,
+                                   @RequestAttribute("currentUser") Object currentUser) {
+        exportService.downloadExportFile(id, response, currentUser);
+    }
+
+    /**
+     * 下载活动详情
+     */
+    @GetMapping("/download-activity/{activityId}")
+    public void downloadActivityDetail(@PathVariable Long activityId, HttpServletResponse response,
+                                      @RequestAttribute("currentUser") Object currentUser) {
+        exportService.downloadActivityDetail(activityId, response, currentUser);
     }
 
     /**

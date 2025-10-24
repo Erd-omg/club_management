@@ -2,9 +2,11 @@ package com.club.management.controller;
 
 import com.club.management.common.Result;
 import com.club.management.service.AuthService;
+import com.club.management.service.LogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
 
 /**
@@ -17,14 +19,27 @@ public class AuthController {
     @Autowired
     private AuthService authService;
 
+    @Autowired
+    private LogService logService;
+
     /**
      * 用户登录
      */
     @PostMapping("/login")
-    public Result<Map<String, Object>> login(@RequestBody Map<String, String> loginData) {
+    public Result<Map<String, Object>> login(@RequestBody Map<String, String> loginData, HttpServletRequest request) {
         String stuId = loginData.get("stuId");
         String password = loginData.get("password");
-        return authService.login(stuId, password);
+        
+        Result<Map<String, Object>> result = authService.login(stuId, password);
+        
+        // 记录登录日志
+        if (result.getCode() == 200) {
+            logService.logOperation(stuId, "用户登录", "POST /auth/login", "学号: " + stuId, request);
+        } else {
+            logService.logOperation(stuId, "登录失败", "POST /auth/login", "学号: " + stuId, request);
+        }
+        
+        return result;
     }
 
     /**

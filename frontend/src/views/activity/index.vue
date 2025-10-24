@@ -22,6 +22,7 @@
         <el-option label="驳回" value="2" />
       </el-select>
       <el-button type="primary" @click="load" style="margin-left:8px;">查询</el-button>
+      <el-button @click="resetQuery" style="margin-left:8px;">重置</el-button>
       <div class="actions">
         <el-button type="primary" @click="showAdd=true" v-if="canCreate">新增</el-button>
       </div>
@@ -111,7 +112,7 @@
         <el-form-item label="活动简介">
           <el-input type="textarea" :rows="3" v-model="form.description" placeholder="请输入活动简介" />
         </el-form-item>
-        <el-form-item label="审批人" prop="approverIds" v-if="canApprove">
+        <el-form-item label="审批人" prop="approverIds" v-if="canEdit">
           <el-select 
             v-model="form.approverIds" 
             multiple 
@@ -131,19 +132,33 @@
           </el-select>
         </el-form-item>
         <el-form-item label="负责部门" prop="deptIds">
-          <el-select v-model="form.deptIds" multiple placeholder="选择负责部门" style="width: 100%">
+          <el-select v-model="form.deptIds" multiple placeholder="选择负责部门" style="width: 100%" :disabled="isMinisterOnly">
             <el-option
-              v-for="dept in deptList"
+              v-for="dept in availableDepts"
               :key="dept.id"
               :label="dept.name"
               :value="dept.id"
             />
           </el-select>
+          <div v-if="isMinisterOnly" class="minister-tip">
+            <el-tag type="info" size="small">部长只能创建本部门负责的活动</el-tag>
+          </div>
+        </el-form-item>
+        <el-form-item>
+          <el-alert
+            title="提示"
+            type="info"
+            :closable="false"
+            show-icon>
+            <template slot="default">
+              活动创建成功后，将自动跳转到编辑页面，您可以在编辑页面上传活动附件
+            </template>
+          </el-alert>
         </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
         <el-button @click="showAdd=false">取 消</el-button>
-        <el-button type="primary" @click="create">确 定</el-button>
+        <el-button type="primary" @click="create" :loading="createLoading">确 定</el-button>
       </span>
     </el-dialog>
 
@@ -206,6 +221,7 @@ export default {
       approverOptions: [],
       deptList: [],
       approverSearchLoading: false,
+      createLoading: false,
       rules: {
         name: [{ required: true, message: '请输入活动名称', trigger: 'blur' }],
         type: [{ required: true, message: '请选择活动类型', trigger: 'change' }],
@@ -222,7 +238,7 @@ export default {
     },
     canEdit() {
       const user = this.$store.state.user;
-      return user && ['社长', '副社长', '部长', '指导老师'].includes(user.role);
+      return user && ['社长', '副社长', '部长'].includes(user.role);
     },
     canDelete() {
       const user = this.$store.state.user;
@@ -231,11 +247,29 @@ export default {
     canCreate() {
       const user = this.$store.state.user;
       return user && ['社长', '副社长', '部长'].includes(user.role);
+    },
+    isMinisterOnly() {
+      const user = this.$store.state.user;
+      return user && user.role === '部长';
+    },
+    availableDepts() {
+      const user = this.$store.state.user;
+      if (user && user.role === '部长') {
+        // 部长只能选择本部门
+        return this.deptList.filter(dept => dept.id === user.deptId);
+      }
+      return this.deptList;
     }
   },
   created() { 
     this.load(); 
     this.loadDepts();
+    
+    // 部长自动设置本部门为负责部门
+    const user = this.$store.state.user;
+    if (user && user.role === '部长' && user.deptId) {
+      this.form.deptIds = [user.deptId];
+    }
   },
   methods: {
     async load() {
@@ -265,6 +299,10 @@ export default {
       this.query.sortOrder = order;
       this.load();
     },
+    resetQuery() {
+      this.query = { name: '', type: '', deptId: '', status: '', sortField: '', sortOrder: '' };
+      this.load();
+    },
     async loadDepts() {
       try {
         const res = await fetchDepts();
@@ -277,8 +315,15 @@ export default {
       if (!query) return;
       this.approverSearchLoading = true;
       try {
-        const res = await searchUsers(query, '指导老师');
-        this.approverOptions = res.data || [];
+        // 搜索社长、副社长、指导老师作为审批人
+        const results = [];
+        for (const role of ['社长', '副社长', '指导老师']) {
+          const res = await searchUsers(query, role);
+          if (res.data && res.data.length > 0) {
+            results.push(...res.data);
+          }
+        }
+        this.approverOptions = results;
       } catch (e) {
         this.$message.error('搜索审批人失败');
       } finally {
@@ -286,6 +331,11 @@ export default {
       }
     },
     async create() {
+      if (this.createLoading) {
+        this.$message.warning('正在创建中，请勿重复提交');
+        return;
+      }
+      
       try {
         await this.$refs.form.validate();
       } catch (e) {
@@ -293,6 +343,14 @@ export default {
       }
       
       const f = this.form;
+      
+      // 部长自动设置本部门为负责部门
+      const user = this.$store.state.user;
+      if (user && user.role === '部长' && user.deptId) {
+        f.deptIds = [user.deptId];
+      }
+      
+      this.createLoading = true;
       try {
         // 创建活动
         const activityRes = await addActivity({ 
@@ -307,7 +365,13 @@ export default {
         
         // 设置审批人和负责部门
         if (f.approverIds.length > 0 || f.deptIds.length > 0) {
-          await setupActivityRelations(activityRes.data, {
+          // 检查活动ID是否为有效数字
+          const activityId = activityRes.data;
+          if (typeof activityId !== 'number' && !Number.isInteger(activityId)) {
+            throw new Error('活动ID无效');
+          }
+          
+          await setupActivityRelations(activityId, {
             approverUserIds: f.approverIds,
             deptIds: f.deptIds
           });
@@ -317,8 +381,13 @@ export default {
         this.resetForm();
         this.showAdd = false;
         this.load();
+        
+        // 跳转到编辑页面，方便用户上传附件
+        this.$router.push(`/activity/${activityRes.data}/edit`);
       } catch (e) {
-        this.$message.error('新增失败');
+        this.$message.error('新增失败: ' + (e.message || '未知错误'));
+      } finally {
+        this.createLoading = false;
       }
     },
     async remove(id) {
@@ -382,6 +451,12 @@ export default {
         createBy: 1, description: '', approverIds: [], deptIds: [] 
       };
       this.approverOptions = [];
+      
+      // 部长自动设置本部门为负责部门
+      const user = this.$store.state.user;
+      if (user && user.role === '部长' && user.deptId) {
+        this.form.deptIds = [user.deptId];
+      }
     },
     getStatusType(status) {
       const types = { 0: 'warning', 1: 'success', 2: 'danger' };
@@ -400,16 +475,17 @@ export default {
       const user = this.$store.state.user;
       if (!user) return false;
       
-      // 检查当前用户是否已经审批过该活动
-      // 通过检查活动审批人列表中当前用户的审批状态
+      // 检查当前用户是否是该活动的审批人之一
       if (activity.approvers && activity.approvers.length > 0) {
         const userApprover = activity.approvers.find(approver => approver.userId === user.id);
-        if (userApprover && userApprover.status !== undefined) {
+        if (userApprover) {
+          // 用户是审批人，检查是否已审批
           return userApprover.status === 1 || userApprover.status === 2; // 1-通过，2-驳回
         }
       }
       
-      return false;
+      // 如果用户不是审批人，返回true以隐藏审批按钮
+      return true;
     }
   }
 };
@@ -461,5 +537,9 @@ export default {
 
 .sort-buttons i.active {
   color: #409eff;
+}
+
+.minister-tip {
+  margin-top: 8px;
 }
 </style>

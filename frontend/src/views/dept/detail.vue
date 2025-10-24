@@ -13,14 +13,25 @@
         <el-card class="info-card">
           <div slot="header">
             <span>部门信息</span>
-            <el-button 
-              v-if="canManageDepts" 
-              type="text" 
-              @click="showEditDept = true"
-              style="float: right; padding: 3px 0"
-            >
-              编辑
-            </el-button>
+            <div style="float: right;">
+              <el-button 
+                v-if="canManageDepts" 
+                type="text" 
+                @click="showEditDept = true"
+                style="padding: 3px 0; margin-right: 10px;"
+              >
+                编辑
+              </el-button>
+              <el-button 
+                v-if="canDeleteDept" 
+                type="text" 
+                @click="deleteDept"
+                style="padding: 3px 0; color: #f56c6c;"
+                :disabled="deptInfo.memberCount > 0"
+              >
+                删除
+              </el-button>
+            </div>
           </div>
           <div class="dept-info">
             <div class="info-item">
@@ -230,7 +241,7 @@
 </template>
 
 <script>
-import { getDeptDetail, updateDept, fetchMembers, addMember, updateMember, deleteMember, fetchActivities } from '@/utils/api';
+import { getDeptDetail, updateDept, fetchMembers, addMember, updateMember, deleteMember, fetchActivities, deleteDept } from '@/utils/api';
 
 export default {
   name: 'DeptDetail',
@@ -254,7 +265,10 @@ export default {
         phone: '', email: '', role: '干事', joinDate: '', deptId: null 
       },
       memberRules: {
-        stuId: [{ required: true, message: '请输入学号', trigger: 'blur' }],
+        stuId: [
+          { required: true, message: '请输入学号', trigger: 'blur' },
+          { pattern: /^\d{8}$/, message: '学号必须为8位数字', trigger: 'blur' }
+        ],
         name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
         gender: [{ required: true, message: '请选择性别', trigger: 'change' }],
         college: [{ required: true, message: '请输入学院', trigger: 'blur' }],
@@ -262,7 +276,7 @@ export default {
         grade: [{ required: true, message: '请选择年级', trigger: 'change' }],
         phone: [
           { required: true, message: '请输入手机号', trigger: 'blur' },
-          { pattern: /^1\d{10}$/, message: '请输入正确的11位手机号', trigger: 'blur' }
+          { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的11位手机号', trigger: ['blur', 'change'] }
         ],
         email: [{ required: true, message: '请输入邮箱', trigger: 'blur' }],
         role: [{ required: true, message: '请选择角色', trigger: 'change' }],
@@ -276,6 +290,10 @@ export default {
     },
     canEditMembers() {
       return this.$store.getters.canEditMembers;
+    },
+    canDeleteDept() {
+      const user = this.$store.state.user;
+      return user && (user.role === '社长' || user.role === '副社长');
     }
   },
   created() {
@@ -329,6 +347,28 @@ export default {
         this.loadDeptDetail();
       } catch (e) {
         this.$message.error('更新失败');
+      }
+    },
+    async deleteDept() {
+      if (this.deptInfo.memberCount > 0) {
+        this.$message.warning('该部门下还有成员，无法删除');
+        return;
+      }
+      
+      try {
+        await this.$confirm(`确定要删除部门"${this.deptInfo.name}"吗？`, '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        });
+        
+        await deleteDept(this.deptInfo.id);
+        this.$message.success('删除成功');
+        this.$router.push('/dept');
+      } catch (error) {
+        if (error !== 'cancel') {
+          this.$message.error('删除失败：' + (error.message || '未知错误'));
+        }
       }
     },
     async addMember() {

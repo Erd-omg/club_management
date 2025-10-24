@@ -52,7 +52,7 @@ public class DeptController {
 
     /** 删除部门 */
     @DeleteMapping("/delete/{id}")
-    public Result<String> deleteDept(@PathVariable Long id) {
-        return deptService.deleteDept(id);
+    public Result<String> deleteDept(@PathVariable Long id, @RequestAttribute("currentUser") Object currentUser) {
+        return deptService.deleteDept(id, currentUser);
     }
 }

@@ -5,13 +5,16 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.club.management.entity.Dept;
 import com.club.management.entity.Member;
+import com.club.management.entity.SysUser;
 import com.club.management.mapper.DeptMapper;
 import com.club.management.mapper.MemberMapper;
+import com.club.management.mapper.SysUserMapper;
 import com.club.management.common.Result;
 import com.club.management.common.ErrorCode;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -32,11 +35,23 @@ public class MemberService extends ServiceImpl<MemberMapper, Member> {
     @Autowired
     private DeptMapper deptMapper;
 
+    @Autowired
+    private SysUserMapper sysUserMapper;
+
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
+
+    @Autowired
+    private com.club.management.mapper.ActivityMemberMapper activityMemberMapper;
+
+    @Autowired
+    private com.club.management.mapper.ActivityApproverMapper activityApproverMapper;
+
     /**
      * 分页查询社员
      */
     public Result<Page<Member>> getMemberPage(int page, int size, String name, 
-                                            String stuId, Long deptId, String role, Object currentUser) {
+                                            String stuId, Long deptId, String role, String sortField, String sortOrder, Object currentUser) {
         // 权限控制
         String userRole = null;
         Long userId = null;
@@ -60,6 +75,15 @@ public class MemberService extends ServiceImpl<MemberMapper, Member> {
             return Result.success(result);
         }
         
+        // 副部长只能查看本部门成员
+        if ("副部长".equals(userRole)) {
+            // 获取当前用户的部门ID
+            com.club.management.entity.Member currentMember = getById(userId);
+            if (currentMember != null && currentMember.getDeptId() != null) {
+                deptId = currentMember.getDeptId(); // 强制限制为本部门
+            }
+        }
+        
         // 部长只能查看本部门成员
         if ("部长".equals(userRole)) {
             // 获取当前用户的部门ID
@@ -69,8 +93,13 @@ public class MemberService extends ServiceImpl<MemberMapper, Member> {
             }
         }
         
+        // 指导老师可以查看所有成员
+        if ("指导老师".equals(userRole)) {
+            // 不限制deptId，可以查看所有成员
+        }
+        
         Page<Member> pageParam = new Page<>(page, size);
-        Page<Member> result = (Page<Member>) baseMapper.selectMemberPage(pageParam, name, stuId, deptId, role);
+        Page<Member> result = (Page<Member>) baseMapper.selectMemberPage(pageParam, name, stuId, deptId, role, sortField, sortOrder);
         return Result.success(result);
     }
 
@@ -83,13 +112,66 @@ public class MemberService extends ServiceImpl<MemberMapper, Member> {
             return Result.businessError(ErrorCode.FORBIDDEN, "权限不足");
         }
         
+        // 参数验证
+        if (member.getStuId() == null || member.getStuId().trim().isEmpty()) {
+            return Result.businessError(ErrorCode.BAD_REQUEST, "学号不能为空");
+        }
+        if (member.getName() == null || member.getName().trim().isEmpty()) {
+            return Result.businessError(ErrorCode.BAD_REQUEST, "姓名不能为空");
+        }
+        if (member.getPhone() == null || member.getPhone().trim().isEmpty()) {
+            return Result.businessError(ErrorCode.BAD_REQUEST, "手机号不能为空");
+        }
+        if (member.getEmail() == null || member.getEmail().trim().isEmpty()) {
+            return Result.businessError(ErrorCode.BAD_REQUEST, "邮箱不能为空");
+        }
+        
+        // 验证学号格式
+        if (!member.getStuId().matches("\\d{8}")) {
+            return Result.businessError(ErrorCode.BAD_REQUEST, "学号必须为8位数字");
+        }
+        
+        // 验证手机号格式
+        if (!member.getPhone().matches("^1[3-9]\\d{9}$")) {
+            return Result.businessError(ErrorCode.BAD_REQUEST, "手机号格式不正确");
+        }
+        
+        // 验证邮箱格式
+        if (!member.getEmail().matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")) {
+            return Result.businessError(ErrorCode.BAD_REQUEST, "邮箱格式不正确");
+        }
+        
         // 检查学号是否已存在
         Member existingMember = getOne(new QueryWrapper<Member>().eq("stu_id", member.getStuId()));
         if (existingMember != null) {
             return Result.businessError(ErrorCode.STUDENT_ID_EXISTS, "学号已存在");
         }
-
+        
+        // 生成初始密码（学号后6位）
+        String stuId = member.getStuId();
+        if (stuId != null && stuId.length() == 8) {
+            String initialPassword = stuId.substring(2); // 取学号后6位
+            member.setPassword(passwordEncoder.encode(initialPassword));
+        }
+        
+        // 社长、副社长、指导老师没有部门
+        if ("社长".equals(member.getRole()) || "副社长".equals(member.getRole()) || "指导老师".equals(member.getRole())) {
+            member.setDeptId(null);
+        }
+        
+        // 保存社员记录
         save(member);
+        
+        // 创建系统用户记录（用于登录）
+        SysUser sysUser = new SysUser();
+        sysUser.setStuId(member.getStuId());
+        sysUser.setName(member.getName());
+        sysUser.setRole(member.getRole());
+        sysUser.setPassword(member.getPassword());
+        sysUser.setStatus(1); // 启用状态
+        sysUser.setCreateBy(getUserId(currentUser));
+        sysUserMapper.insert(sysUser);
+        
         return Result.success("添加社员成功");
     }
 
@@ -118,12 +200,22 @@ public class MemberService extends ServiceImpl<MemberMapper, Member> {
             }
         }
         
+        // 检查指导老师是否试图维护社员档案（根据SDS.md，指导老师不能维护社员档案）
+        if ("指导老师".equals(userRole)) {
+            return Result.businessError(ErrorCode.FORBIDDEN, "指导老师不能维护社员档案");
+        }
+        
         // 检查学号是否已存在（排除自己）
         Member existingMember = getOne(new QueryWrapper<Member>()
                 .eq("stu_id", member.getStuId())
                 .ne("id", member.getId()));
         if (existingMember != null) {
             return Result.businessError(ErrorCode.STUDENT_ID_EXISTS, "学号已存在");
+        }
+
+        // 社长、副社长、指导老师没有部门
+        if ("社长".equals(member.getRole()) || "副社长".equals(member.getRole()) || "指导老师".equals(member.getRole())) {
+            member.setDeptId(null);
         }
 
         updateById(member);
@@ -139,8 +231,32 @@ public class MemberService extends ServiceImpl<MemberMapper, Member> {
             return Result.businessError(ErrorCode.FORBIDDEN, "权限不足");
         }
         
-        removeById(id);
-        return Result.success("删除社员成功");
+        try {
+            // 获取社员信息
+            Member member = getById(id);
+            if (member == null) {
+                return Result.businessError(ErrorCode.NOT_FOUND, "社员不存在");
+            }
+            
+            // 删除活动参与记录
+            activityMemberMapper.delete(new QueryWrapper<com.club.management.entity.ActivityMember>()
+                .eq("member_id", id));
+            
+            // 删除活动审批记录
+            activityApproverMapper.delete(new QueryWrapper<com.club.management.entity.ActivityApprover>()
+                .eq("user_id", id));
+            
+            // 删除系统用户记录
+            sysUserMapper.delete(new QueryWrapper<SysUser>().eq("stu_id", member.getStuId()));
+            
+            // 删除社员记录
+            removeById(id);
+            
+            return Result.success("删除社员成功");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.businessError(ErrorCode.SYSTEM_ERROR, "删除社员失败: " + e.getMessage());
+        }
     }
 
     /**
@@ -189,9 +305,9 @@ public class MemberService extends ServiceImpl<MemberMapper, Member> {
             
             // 添加示例数据
             String[][] sampleData = {
-                {"2021001", "张三", "男", "计算机学院", "软件工程", "2021级", "13800138001", "zhangsan@example.com", "2021-09-01", "1", "干事"},
-                {"2021002", "李四", "女", "计算机学院", "计算机科学与技术", "2021级", "13800138002", "lisi@example.com", "2021-09-01", "2", "干事"},
-                {"2021003", "王五", "男", "信息学院", "网络工程", "2021级", "13800138003", "wangwu@example.com", "2021-09-01", "3", "干事"}
+                {"2021001", "张三", "男", "计算机学院", "软件工程", "大一", "13800138001", "zhangsan@example.com", "2021-09-01", "1", "干事"},
+                {"2021002", "李四", "女", "计算机学院", "计算机科学与技术", "大二", "13800138002", "lisi@example.com", "2021-09-01", "2", "干事"},
+                {"2021003", "王五", "男", "信息学院", "网络工程", "大三", "13800138003", "wangwu@example.com", "2021-09-01", "3", "干事"}
             };
             
             for (int i = 0; i < sampleData.length; i++) {
@@ -318,17 +434,43 @@ public class MemberService extends ServiceImpl<MemberMapper, Member> {
                     
                     // 解析部门ID
                     String deptIdStr = (String) rowData.get("deptId");
-                    if (deptIdStr != null && !deptIdStr.isEmpty()) {
+                    String role = (String) rowData.get("role");
+                    
+                    // 社长、副社长、指导老师没有部门
+                    if ("社长".equals(role) || "副社长".equals(role) || "指导老师".equals(role)) {
+                        member.setDeptId(null);
+                    } else if (deptIdStr != null && !deptIdStr.isEmpty()) {
                         member.setDeptId(Long.parseLong(deptIdStr));
                     }
                     
-                    member.setRole((String) rowData.get("role"));
+                    member.setRole(role);
                     member.setCreateBy(1L); // 默认创建人
+                    
+                    // 生成初始密码（学号后6位）
+                    String stuId = member.getStuId();
+                    if (stuId != null && stuId.length() == 8) {
+                        String initialPassword = stuId.substring(2); // 取学号后6位
+                        member.setPassword(passwordEncoder.encode(initialPassword));
+                    }
                     
                     // 检查学号是否已存在
                     Member existingMember = getOne(new QueryWrapper<Member>().eq("stu_id", member.getStuId()));
-                    if (existingMember == null) {
+                    SysUser existingSysUser = sysUserMapper.selectOne(new QueryWrapper<SysUser>().eq("stu_id", member.getStuId()));
+                    
+                    if (existingMember == null && existingSysUser == null) {
+                        // 保存社员记录
                         save(member);
+                        
+                        // 创建系统用户记录（用于登录）
+                        SysUser sysUser = new SysUser();
+                        sysUser.setStuId(member.getStuId());
+                        sysUser.setName(member.getName());
+                        sysUser.setRole(member.getRole());
+                        sysUser.setPassword(member.getPassword());
+                        sysUser.setStatus(1); // 启用状态
+                        sysUser.setCreateBy(1L);
+                        sysUserMapper.insert(sysUser);
+                        
                         successCount++;
                     } else {
                         errorCount++;
@@ -472,6 +614,7 @@ public class MemberService extends ServiceImpl<MemberMapper, Member> {
         }
     }
     
+    
     /**
      * 获取用户角色
      */
@@ -482,6 +625,20 @@ public class MemberService extends ServiceImpl<MemberMapper, Member> {
         } else if (currentUser instanceof com.club.management.entity.SysUser) {
             com.club.management.entity.SysUser sysUser = (com.club.management.entity.SysUser) currentUser;
             return sysUser.getRole();
+        }
+        return null;
+    }
+    
+    /**
+     * 获取用户ID
+     */
+    private Long getUserId(Object currentUser) {
+        if (currentUser instanceof com.club.management.entity.Member) {
+            com.club.management.entity.Member member = (com.club.management.entity.Member) currentUser;
+            return member.getId();
+        } else if (currentUser instanceof com.club.management.entity.SysUser) {
+            com.club.management.entity.SysUser sysUser = (com.club.management.entity.SysUser) currentUser;
+            return sysUser.getId();
         }
         return null;
     }

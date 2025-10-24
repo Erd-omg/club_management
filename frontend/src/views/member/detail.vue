@@ -6,7 +6,7 @@
       </el-button>
       <h2 class="page-title">{{ memberInfo.name }} - 社员详情</h2>
       <el-button 
-        v-if="canEdit" 
+        v-if="canEditMember" 
         type="primary" 
         @click="showEdit = true"
         style="margin-left: auto;"
@@ -21,13 +21,6 @@
         <el-card class="info-card">
           <div slot="header">基本信息</div>
           <div class="member-info">
-            <div class="avatar-section">
-              <el-avatar 
-                :size="80" 
-                :src="memberInfo.photoOssKey" 
-                icon="el-icon-user-solid"
-              />
-            </div>
             <div class="info-item">
               <label>学号：</label>
               <span>{{ memberInfo.stuId }}</span>
@@ -204,7 +197,10 @@ export default {
       deptList: [],
       editForm: {},
       editRules: {
-        stuId: [{ required: true, message: '请输入学号', trigger: 'blur' }],
+        stuId: [
+          { required: true, message: '请输入学号', trigger: 'blur' },
+          { pattern: /^\d{8}$/, message: '学号必须为8位数字', trigger: 'blur' }
+        ],
         name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
         gender: [{ required: true, message: '请选择性别', trigger: 'change' }],
         college: [{ required: true, message: '请输入学院', trigger: 'blur' }],
@@ -212,19 +208,19 @@ export default {
         grade: [{ required: true, message: '请输入年级', trigger: 'blur' }],
         phone: [
           { required: true, message: '请输入手机号', trigger: 'blur' },
-          { pattern: /^1\d{10}$/, message: '请输入正确的11位手机号', trigger: 'blur' }
+          { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的11位手机号', trigger: 'blur' }
         ],
         email: [{ required: true, message: '请输入邮箱', trigger: 'blur' }]
       }
     };
   },
   computed: {
-    canEdit() {
+    canEditMember() {
       const user = this.$store.state.user;
       const currentMember = this.memberInfo;
       
-      // 社长、副社长、指导老师可以编辑所有成员
-      if (['社长', '副社长', '指导老师'].includes(user.role)) {
+      // 社长、副社长可以编辑所有成员
+      if (['社长', '副社长'].includes(user.role)) {
         return true;
       }
       
@@ -388,5 +384,7 @@ export default {
 .info-item span {
   color: #333;
   flex: 1;
+  word-break: break-all;
+  overflow-wrap: break-word;
 }
 </style>

@@ -2,7 +2,7 @@
   <el-aside :width="collapsed ? '64px' : '200px'" class="aside">
     <div class="logo" @click="$router.push('/dashboard')">
       <span class="logo-icon">CM</span>
-      <span v-if="!collapsed" class="logo-text">Club Manager</span>
+      <span v-if="!collapsed" class="logo-text">社团管理系统</span>
     </div>
     <el-menu
       :default-active="$route.path"

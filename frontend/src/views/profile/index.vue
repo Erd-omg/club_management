@@ -44,7 +44,7 @@
               <el-input v-model="form.phone" />
             </el-form-item>
             <el-form-item label="部门">
-              <el-input :value="form.deptName || form.deptId" disabled />
+              <el-input :value="getDepartmentDisplay()" disabled />
             </el-form-item>
             <el-form-item label="角色">
               <el-input :value="form.role" disabled />
@@ -139,6 +139,13 @@ export default {
         this.$message.error('加载个人信息失败');
       }
     },
+    getDepartmentDisplay() {
+      // 社长、副社长、指导老师没有部门
+      if (['社长', '副社长', '指导老师'].includes(this.form.role)) {
+        return '无';
+      }
+      return this.form.deptName || this.form.deptId || '未分配';
+    },
     async save() {
       if (!this.form.name) {
         return this.$message.warning('请输入姓名');
@@ -182,29 +189,24 @@ export default {
           oldPassword: this.passwordForm.oldPassword,
           newPassword: this.passwordForm.newPassword
         });
+        
         this.$message.success('密码修改成功');
         this.passwordForm = { oldPassword: '', newPassword: '', confirmPassword: '' };
       } catch (e) {
         console.error('密码修改错误:', e);
-        console.log('错误响应:', e.response);
-        console.log('错误状态码:', e.response && e.response.status);
-        console.log('错误数据:', e.response && e.response.data);
         
         // 检查是否是密码错误
         if (e.response && e.response.data) {
           const errorData = e.response.data;
-          console.log('错误数据详情:', JSON.stringify(errorData));
-          if (errorData.message && (errorData.message.includes('原密码错误') || errorData.message.includes('密码错误'))) {
-            this.$message.error('密码错误无法修改密码');
-            return; // 直接返回，不继续执行
-          } else if (errorData.msg && (errorData.msg.includes('原密码错误') || errorData.msg.includes('密码错误'))) {
-            this.$message.error('密码错误无法修改密码');
-            return; // 直接返回，不继续执行
+          const errorMessage = errorData.message || '';
+          
+          if (errorMessage.includes('原密码错误') || errorMessage.includes('密码错误')) {
+            this.$message.error('当前密码不正确，无法修改密码');
           } else {
-            this.$message.error('密码修改失败：' + (errorData.message || errorData.msg || '未知错误'));
+            this.$message.error('密码修改失败：' + errorMessage);
           }
         } else {
-          this.$message.error('密码修改失败：' + (e.message || '未知错误'));
+          this.$message.error('密码修改失败：' + (e.message || '网络错误，请稍后重试'));
         }
       } finally {
         this.passwordLoading = false;

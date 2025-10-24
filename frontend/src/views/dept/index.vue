@@ -96,8 +96,8 @@ export default {
 <style scoped>
 .toolbar { display:flex; align-items:center; }
 .actions { margin-left:auto; }
-.dept-card { cursor:pointer; margin-bottom:16px; }
-.dept-name { font-size:18px; color:#4167b1; font-weight:600; }
-.dept-intro { color:#666; margin-top:6px; min-height: 40px; }
-.dept-meta { color:#999; margin-top:8px; }
+.dept-card { cursor: pointer; margin-bottom: 16px; }
+.dept-name { font-size: 18px; color: #4167b1; font-weight: 600; }
+.dept-intro { color: #666; margin-top: 6px; min-height: 40px; }
+.dept-meta { color: #999; margin-top: 8px; }
 </style>

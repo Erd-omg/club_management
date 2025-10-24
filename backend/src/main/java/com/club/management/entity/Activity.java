@@ -58,10 +58,6 @@ public class Activity {
      */
     private String description;
 
-    /**
-     * 签到方式
-     */
-    private String signMethod;
 
     /**
      * 附件信息

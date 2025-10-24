@@ -8,10 +8,8 @@ import com.club.management.entity.ActivityMember;
 import com.club.management.mapper.ActivityMapper;
 import com.club.management.mapper.ActivityApproverMapper;
 import com.club.management.mapper.ActivityDeptMapper;
-import com.club.management.mapper.SysMessageMapper;
 import com.club.management.entity.ActivityApprover;
 import com.club.management.entity.ActivityDept;
-import com.club.management.entity.SysMessage;
 import com.club.management.mapper.ActivityMemberMapper;
 import com.club.management.common.Result;
 import com.club.management.common.ErrorCode;
@@ -38,8 +36,6 @@ public class ActivityService extends ServiceImpl<ActivityMapper, Activity> {
     @Autowired
     private ActivityDeptMapper activityDeptMapper;
 
-    @Autowired
-    private SysMessageMapper sysMessageMapper;
 
     /**
      * 分页查询活动
@@ -63,12 +59,31 @@ public class ActivityService extends ServiceImpl<ActivityMapper, Activity> {
     /**
      * 添加活动
      */
-    public Result<String> addActivity(Activity activity, Object currentUser) {
+    public Result<Long> addActivity(Activity activity, Object currentUser) {
         try {
             // 权限检查：根据SDS.md，只有社长、副社长、部长可以创建活动
             String userRole = getUserRole(currentUser);
             if (!"社长".equals(userRole) && !"副社长".equals(userRole) && !"部长".equals(userRole)) {
                 return Result.businessError(ErrorCode.FORBIDDEN, "权限不足，只有社长、副社长、部长可以创建活动");
+            }
+            
+            // 参数验证
+            if (activity.getName() == null || activity.getName().trim().isEmpty()) {
+                return Result.businessError(ErrorCode.BAD_REQUEST, "活动名称不能为空");
+            }
+            if (activity.getType() == null || activity.getType().trim().isEmpty()) {
+                return Result.businessError(ErrorCode.BAD_REQUEST, "活动类型不能为空");
+            }
+            if (activity.getStartTime() == null) {
+                return Result.businessError(ErrorCode.BAD_REQUEST, "开始时间不能为空");
+            }
+            if (activity.getEndTime() == null) {
+                return Result.businessError(ErrorCode.BAD_REQUEST, "结束时间不能为空");
+            }
+            
+            // 验证时间逻辑
+            if (activity.getStartTime().isAfter(activity.getEndTime())) {
+                return Result.businessError(ErrorCode.BAD_REQUEST, "开始时间不能晚于结束时间");
             }
             
             // 设置创建人ID
@@ -93,7 +108,7 @@ public class ActivityService extends ServiceImpl<ActivityMapper, Activity> {
             System.out.println("准备保存活动: " + activity);
             
             save(activity);
-            return Result.success("添加活动成功");
+            return Result.success(activity.getId());
         } catch (Exception e) {
             e.printStackTrace();
             return Result.businessError(ErrorCode.SYSTEM_ERROR, "添加活动失败: " + e.getMessage());
@@ -103,7 +118,22 @@ public class ActivityService extends ServiceImpl<ActivityMapper, Activity> {
     /**
      * 设置审批人与责任部门（创建或更新时调用）
      */
-    public Result<String> setApproversAndDepts(Long activityId, List<Long> approverUserIds, List<Long> deptIds) {
+    public Result<String> setApproversAndDepts(Long activityId, List<Long> approverUserIds, List<Long> deptIds, Object currentUser) {
+        // 权限检查：部长只能设置本部门负责的活动
+        String userRole = getUserRole(currentUser);
+        if ("部长".equals(userRole)) {
+            // 获取当前用户的部门ID
+            Long userDeptId = getUserDeptId(currentUser);
+            if (userDeptId == null) {
+                return Result.businessError(ErrorCode.UNAUTHORIZED, "无法获取用户部门信息");
+            }
+            
+            // 检查负责部门是否包含用户所在部门
+            if (deptIds == null || deptIds.isEmpty() || !deptIds.contains(userDeptId)) {
+                return Result.businessError(ErrorCode.FORBIDDEN, "部长只能创建本部门负责的活动");
+            }
+        }
+        
         // 先清空原关系
         activityApproverMapper.delete(new QueryWrapper<ActivityApprover>().eq("activity_id", activityId));
         activityDeptMapper.delete(new QueryWrapper<ActivityDept>().eq("activity_id", activityId));
@@ -211,16 +241,6 @@ public class ActivityService extends ServiceImpl<ActivityMapper, Activity> {
             activity.setStatus(2);
             activity.setRejectReason(rejectReason);
             updateById(activity);
-            // 发送驳回通知给创建者
-            if (activity.getCreateBy() != null) {
-                SysMessage msg = new SysMessage();
-                msg.setRecipientId(activity.getCreateBy());
-                msg.setSenderId(approverUserId);
-                msg.setTitle("活动驳回通知");
-                msg.setContent((activity.getName() != null ? activity.getName() : "活动") + " 已被驳回，理由：" + (rejectReason == null ? "无" : rejectReason));
-                msg.setStatus(0);
-                sysMessageMapper.insert(msg);
-            }
             return Result.success("已驳回");
         }
 
@@ -229,7 +249,11 @@ public class ActivityService extends ServiceImpl<ActivityMapper, Activity> {
                 .eq("activity_id", activityId).eq("status", 0));
         if (waiting != null && waiting == 0L) {
             activity.setStatus(1);
+            activity.setUpdateTime(LocalDateTime.now());
             updateById(activity);
+            
+            // 记录状态变更日志
+            System.out.println("活动 " + activityId + " 所有审批人已通过，状态变更为已通过");
         }
         return Result.success("已通过");
     }
@@ -283,7 +307,13 @@ public class ActivityService extends ServiceImpl<ActivityMapper, Activity> {
     /**
      * 更新活动参与成员
      */
-    public Result<String> updateActivityMembers(Long activityId, List<Long> memberIds) {
+    public Result<String> updateActivityMembers(Long activityId, List<Long> memberIds, Object currentUser) {
+        // 权限检查：指导老师不能维护活动参与记录
+        String userRole = getUserRole(currentUser);
+        if ("指导老师".equals(userRole)) {
+            return Result.businessError(ErrorCode.FORBIDDEN, "指导老师不能维护活动参与记录");
+        }
+        
         try {
             // 先删除该活动的所有参与记录
             activityMemberMapper.delete(new QueryWrapper<ActivityMember>().eq("activity_id", activityId));
@@ -295,7 +325,6 @@ public class ActivityService extends ServiceImpl<ActivityMapper, Activity> {
                 activityMember.setMemberId(memberId);
                 activityMember.setSignupTime(LocalDateTime.now());
                 activityMember.setSignupStatus(1); // 已报名
-                activityMember.setAttendanceStatus(0); // 未签到
                 activityMemberMapper.insert(activityMember);
             }
             
@@ -330,6 +359,56 @@ public class ActivityService extends ServiceImpl<ActivityMapper, Activity> {
     }
     
     /**
+     * 获取活动审批状态详情
+     */
+    public Result<Map<String, Object>> getActivityApprovalStatus(Long activityId) {
+        Activity activity = getById(activityId);
+        if (activity == null) {
+            return Result.businessError(ErrorCode.SYSTEM_ERROR, "活动不存在");
+        }
+        
+        Map<String, Object> statusInfo = new HashMap<>();
+        statusInfo.put("activityId", activityId);
+        statusInfo.put("activityName", activity.getName());
+        statusInfo.put("currentStatus", activity.getStatus());
+        statusInfo.put("statusText", getStatusText(activity.getStatus()));
+        
+        // 获取审批人状态
+        List<Map<String, Object>> approvers = baseMapper.selectActivityApprovers(activityId);
+        statusInfo.put("approvers", approvers);
+        
+        // 统计审批状态
+        long totalApprovers = approvers.size();
+        long approvedCount = approvers.stream().mapToLong(ap -> (Long) ap.get("status") == 1L ? 1 : 0).sum();
+        long rejectedCount = approvers.stream().mapToLong(ap -> (Long) ap.get("status") == 2L ? 1 : 0).sum();
+        long pendingCount = totalApprovers - approvedCount - rejectedCount;
+        
+        statusInfo.put("totalApprovers", totalApprovers);
+        statusInfo.put("approvedCount", approvedCount);
+        statusInfo.put("rejectedCount", rejectedCount);
+        statusInfo.put("pendingCount", pendingCount);
+        
+        // 判断是否所有审批人都已处理
+        boolean allProcessed = pendingCount == 0;
+        statusInfo.put("allProcessed", allProcessed);
+        
+        return Result.success(statusInfo);
+    }
+    
+    /**
+     * 获取状态文本
+     */
+    private String getStatusText(Integer status) {
+        if (status == null) return "未知";
+        switch (status) {
+            case 0: return "待审批";
+            case 1: return "已通过";
+            case 2: return "已驳回";
+            default: return "未知";
+        }
+    }
+    
+    /**
      * 获取用户角色
      */
     private String getUserRole(Object currentUser) {
@@ -350,6 +429,17 @@ public class ActivityService extends ServiceImpl<ActivityMapper, Activity> {
         } else if (currentUser instanceof com.club.management.entity.SysUser) {
             com.club.management.entity.SysUser sysUser = (com.club.management.entity.SysUser) currentUser;
             return sysUser.getId();
+        }
+        return null;
+    }
+    
+    private Long getUserDeptId(Object currentUser) {
+        if (currentUser instanceof com.club.management.entity.Member) {
+            com.club.management.entity.Member member = (com.club.management.entity.Member) currentUser;
+            return member.getDeptId();
+        } else if (currentUser instanceof com.club.management.entity.SysUser) {
+            // SysUser没有部门信息，返回null
+            return null;
         }
         return null;
     }

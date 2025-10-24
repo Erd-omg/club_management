@@ -45,16 +45,4 @@ public class StatisticsController {
         return statisticsService.getActivityStats(startTime, endTime, currentUser);
     }
 
-    /**
-     * 获取出勤率统计
-     */
-    @GetMapping("/attendance")
-    public Result<Map<String, Object>> getAttendanceStats(
-            @RequestParam(required = false) Long memberId,
-            @RequestParam(required = false) Long deptId,
-            @RequestParam(required = false) LocalDateTime startTime,
-            @RequestParam(required = false) LocalDateTime endTime,
-            @RequestAttribute("currentUser") Object currentUser) {
-        return statisticsService.getAttendanceStats(memberId, deptId, startTime, endTime, currentUser);
-    }
 }

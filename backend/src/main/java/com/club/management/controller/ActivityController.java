@@ -4,9 +4,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.club.management.common.Result;
 import com.club.management.entity.Activity;
 import com.club.management.service.ActivityService;
+import com.club.management.service.LogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +22,21 @@ public class ActivityController {
 
     @Autowired
     private ActivityService activityService;
+
+    @Autowired
+    private LogService logService;
+
+    /**
+     * 获取当前用户学号
+     */
+    private String getCurrentUserStuId(Object currentUser) {
+        if (currentUser instanceof com.club.management.entity.Member) {
+            return ((com.club.management.entity.Member) currentUser).getStuId();
+        } else if (currentUser instanceof com.club.management.entity.SysUser) {
+            return ((com.club.management.entity.SysUser) currentUser).getStuId();
+        }
+        return "unknown";
+    }
 
     /**
      * 分页查询活动
@@ -55,8 +72,18 @@ public class ActivityController {
      * 添加活动
      */
     @PostMapping("/add")
-    public Result<String> addActivity(@RequestBody Activity activity, @RequestAttribute("currentUser") Object currentUser) {
-        return activityService.addActivity(activity, currentUser);
+    public Result<Long> addActivity(@RequestBody Activity activity, @RequestAttribute("currentUser") Object currentUser, HttpServletRequest request) {
+        Result<Long> result = activityService.addActivity(activity, currentUser);
+        
+        // 记录操作日志
+        String operator = getCurrentUserStuId(currentUser);
+        if (result.getCode() == 200) {
+            logService.logOperation(operator, "创建活动", "POST /activity/add", "活动名称: " + activity.getName(), request);
+        } else {
+            logService.logOperation(operator, "创建活动失败", "POST /activity/add", "活动名称: " + activity.getName(), request);
+        }
+        
+        return result;
     }
 
     /**
@@ -90,8 +117,9 @@ public class ActivityController {
      */
     @PostMapping("/setup/{id}")
     public Result<String> setupApproversAndDepts(@PathVariable Long id,
-                                                 @RequestBody SetupPayload payload) {
-        return activityService.setApproversAndDepts(id, payload.getApproverUserIds(), payload.getDeptIds());
+                                                 @RequestBody SetupPayload payload,
+                                                 @RequestAttribute("currentUser") Object currentUser) {
+        return activityService.setApproversAndDepts(id, payload.getApproverUserIds(), payload.getDeptIds(), currentUser);
     }
 
     /**
@@ -155,8 +183,9 @@ public class ActivityController {
      */
     @PutMapping("/members/{activityId}")
     public Result<String> updateActivityMembers(@PathVariable Long activityId, 
-                                              @RequestBody List<Long> memberIds) {
-        return activityService.updateActivityMembers(activityId, memberIds);
+                                              @RequestBody List<Long> memberIds,
+                                              @RequestAttribute("currentUser") Object currentUser) {
+        return activityService.updateActivityMembers(activityId, memberIds, currentUser);
     }
 
     /**
@@ -173,5 +202,13 @@ public class ActivityController {
     @GetMapping("/depts/{activityId}")
     public Result<List<Map<String, Object>>> getActivityDepts(@PathVariable Long activityId) {
         return activityService.getActivityDepts(activityId);
+    }
+    
+    /**
+     * 获取活动审批状态详情
+     */
+    @GetMapping("/approval-status/{activityId}")
+    public Result<Map<String, Object>> getActivityApprovalStatus(@PathVariable Long activityId) {
+        return activityService.getActivityApprovalStatus(activityId);
     }
 }

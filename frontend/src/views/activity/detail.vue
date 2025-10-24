@@ -13,14 +13,24 @@
         <el-card class="info-card">
           <div slot="header">
             <span>活动信息</span>
-            <el-button 
-              v-if="canEdit && activityInfo.status === 0" 
-              type="text" 
-              @click="editActivity"
-              style="float: right; padding: 3px 0"
-            >
-              编辑
-            </el-button>
+            <div style="float: right;">
+              <el-button 
+                v-if="canExportData" 
+                type="text" 
+                @click="exportActivityData"
+                style="padding: 3px 0; margin-right: 10px;"
+              >
+                数据导出
+              </el-button>
+              <el-button 
+                v-if="canEdit && activityInfo.status === 0" 
+                type="text" 
+                @click="editActivity"
+                style="padding: 3px 0"
+              >
+                编辑
+              </el-button>
+            </div>
           </div>
           <div class="activity-info">
             <div class="info-row">
@@ -86,10 +96,16 @@
           </div>
         </el-card>
 
+        <!-- 活动附件 -->
+        <el-card style="margin-top: 16px;" v-if="activityInfo.id">
+          <div slot="header">活动附件</div>
+          <AttachmentList :activity-id="activityInfo.id" />
+        </el-card>
+
         <!-- 参与人员 -->
         <el-card style="margin-top: 16px;">
           <div slot="header">
-            <span>参与人员</span>
+            <span>参与人员 ({{ members.length }}人)</span>
             <el-button 
               v-if="canManageMembers" 
               type="primary" 
@@ -104,7 +120,11 @@
           <el-table :data="members" v-loading="membersLoading" style="width: 100%">
             <el-table-column prop="name" label="姓名" />
             <el-table-column prop="stuId" label="学号" />
-            <el-table-column prop="deptName" label="部门" />
+            <el-table-column label="部门">
+              <template slot-scope="scope">
+                {{ getDepartmentDisplay(scope.row) }}
+              </template>
+            </el-table-column>
             <el-table-column prop="role" label="角色" />
             <el-table-column label="操作" width="100" v-if="canManageMembers">
               <template slot-scope="scope">
@@ -126,7 +146,7 @@
             <el-tag 
               :type="getStatusType(activityInfo.status)" 
               size="large"
-              style="font-size: 16px; padding: 8px 16px; display: block; text-align: center;"
+              style="font-size: 16px; padding: 8px 16px; display: flex; align-items: center; justify-content: center; width: 100%;"
             >
               {{ getStatusText(activityInfo.status) }}
             </el-tag>
@@ -167,11 +187,11 @@
         </el-card>
 
         <!-- 报名按钮 -->
-        <el-card style="margin-top: 16px;" v-if="canSignup && activityInfo.status === 1">
+        <el-card style="margin-top: 16px;" v-if="canSignup">
           <div slot="header">活动报名</div>
           <div class="signup-section">
             <el-button 
-              v-if="!isSignedUp"
+              v-if="!isSignedUp && activityInfo.status === 1"
               type="primary" 
               @click="signupActivity"
               :loading="signupLoading"
@@ -179,7 +199,13 @@
             >
               报名参加
             </el-button>
-            <div v-else class="signed-up-info">
+            <div v-else-if="activityInfo.status === 0" class="signup-disabled">
+              <el-tag type="warning" size="medium">活动待审批，暂不能报名</el-tag>
+            </div>
+            <div v-else-if="activityInfo.status === 2" class="signup-disabled">
+              <el-tag type="danger" size="medium">活动已驳回，不能报名</el-tag>
+            </div>
+            <div v-else-if="isSignedUp" class="signed-up-info">
               <el-tag type="success" size="medium">已报名</el-tag>
               <p class="signup-time">报名时间：{{ signupTime }}</p>
               <el-button 
@@ -202,14 +228,14 @@
             <el-button 
               type="success" 
               @click="showApprovalDialog(true)"
-              style="width: 100%; margin-bottom: 8px;"
+              class="approval-btn"
             >
               通过审批
             </el-button>
             <el-button 
               type="danger" 
               @click="showApprovalDialog(false)"
-              style="width: 100%;"
+              class="approval-btn"
             >
               驳回活动
             </el-button>
@@ -286,7 +312,11 @@
           <el-table-column type="selection" width="55" />
           <el-table-column prop="name" label="姓名" />
           <el-table-column prop="stuId" label="学号" />
-          <el-table-column prop="deptName" label="部门" />
+          <el-table-column label="部门">
+            <template slot-scope="scope">
+              {{ getDepartmentDisplay(scope.row) }}
+            </template>
+          </el-table-column>
           <el-table-column prop="role" label="角色" />
         </el-table>
       </div>
@@ -300,8 +330,13 @@
 
 <script>
 import { getActivityDetail, getActivityFullDetail, approveActivity, getActivityMembers, updateActivityMembers, searchUsers, getActivityApprovers, getActivityDepts, signupActivity, checkSignupStatus } from '@/utils/api';
+import request from '@/utils/request';
+import AttachmentList from '@/components/AttachmentList.vue';
 
 export default {
+  components: {
+    AttachmentList
+  },
   name: 'ActivityDetail',
   data() {
     return {
@@ -327,7 +362,10 @@ export default {
   computed: {
     canEdit() {
       const user = this.$store.state.user;
-      return user && ['社长', '副社长', '部长', '指导老师'].includes(user.role);
+      return user && ['社长', '副社长', '部长'].includes(user.role);
+    },
+    canExportData() {
+      return this.$store.getters.canExportData;
     },
     canApprove() {
       const user = this.$store.state.user;
@@ -595,6 +633,44 @@ export default {
       } finally {
         this.cancelSignupLoading = false;
       }
+    },
+    async exportActivityData() {
+      try {
+        const activityId = this.$route.params.id;
+        const activityName = this.activityInfo.name || '活动详情';
+        
+        // 使用request下载文件
+        const response = await request({
+          url: `/export/download-activity/${activityId}`,
+          method: 'get',
+          responseType: 'blob'
+        });
+        
+        // 创建下载链接 - 确保response.data是正确的二进制数据
+        const blob = new Blob([response.data || response], { 
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+        });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${activityName}_详情_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        this.$message.success('导出成功');
+      } catch (e) {
+        console.error('导出错误:', e);
+        this.$message.error('导出失败：' + (e.message || '未知错误'));
+      }
+    },
+    getDepartmentDisplay(member) {
+      // 社长、副社长、指导老师没有部门
+      if (['社长', '副社长', '指导老师'].includes(member.role)) {
+        return '无';
+      }
+      return member.deptName || '未分配';
     }
   }
 };
@@ -717,6 +793,15 @@ export default {
 
 .action-buttons {
   padding: 8px 0;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.approval-btn {
+  width: 100% !important;
+  margin: 4px 0 !important;
 }
 
 .approval-content {
@@ -745,5 +830,10 @@ export default {
   margin: 8px 0 0 0;
   color: #666;
   font-size: 14px;
+}
+
+.signup-disabled {
+  text-align: center;
+  padding: 16px 0;
 }
 </style>

@@ -21,11 +21,17 @@ public interface MemberMapper extends BaseMapper<Member> {
      */
     IPage<Member> selectMemberPage(Page<Member> page, @Param("name") String name, 
                                    @Param("stuId") String stuId, @Param("deptId") Long deptId, 
-                                   @Param("role") String role);
+                                   @Param("role") String role, @Param("sortField") String sortField,
+                                   @Param("sortOrder") String sortOrder);
 
     /**
      * 获取社员参与的活动
      */
     List<Map<String, Object>> selectMemberActivities(@Param("memberId") Long memberId);
+
+    /**
+     * 搜索社员信息（包含部门名称）
+     */
+    List<Map<String, Object>> searchMembersWithDept(@Param("q") String q, @Param("role") String role);
 }
 

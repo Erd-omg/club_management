@@ -28,11 +28,6 @@ public class Dept {
     private String name;
 
     /**
-     * 排序字段
-     */
-    private Integer sort;
-
-    /**
      * 部门简介
      */
     private String intro;

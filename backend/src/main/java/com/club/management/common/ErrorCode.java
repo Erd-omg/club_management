@@ -46,8 +46,18 @@ public class ErrorCode {
     public static final Integer BAD_REQUEST = 400;
 
     /**
+     * 参数无效
+     */
+    public static final Integer INVALID_PARAM = 4004;
+
+    /**
      * 系统异常
      */
     public static final Integer SYSTEM_ERROR = 500;
+
+    /**
+     * 权限不足
+     */
+    public static final Integer PERMISSION_DENIED = 403;
 }
 

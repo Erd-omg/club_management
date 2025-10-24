@@ -51,11 +51,6 @@ public class ActivityMember {
     @TableField("signup_status")
     private Integer signupStatus;
 
-    /**
-     * 出席状态: 0-未出席, 1-已出席, 2-请假
-     */
-    @TableField("attendance_status")
-    private Integer attendanceStatus;
 
     /**
      * 备注信息

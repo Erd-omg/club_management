@@ -16,7 +16,7 @@ export default new Vuex.Store({
       return state.permissions.includes(permission) || (state.user && state.user.role === '社长');
     },
     canEditMembers: (state) => {
-      return state.user && ['社长', '副社长', '部长', '指导老师'].includes(state.user.role);
+      return state.user && ['社长', '副社长', '部长', '副部长', '指导老师'].includes(state.user.role);
     },
     canApproveActivities: (state) => {
       return state.user && ['社长', '副社长', '指导老师'].includes(state.user.role);

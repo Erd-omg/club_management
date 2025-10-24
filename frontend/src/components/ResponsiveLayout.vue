@@ -5,7 +5,7 @@
       <div class="mobile-header-content">
         <div class="mobile-logo">
           <span class="logo-icon">CM</span>
-          <span class="logo-text">Club Manager</span>
+          <span class="logo-text">社团管理系统</span>
         </div>
         <el-button 
           type="text" 
