@@ -17,7 +17,7 @@
         </el-card>
       </el-col>
       
-      <!-- 近期活动 - 所有角色可见 -->
+      <!-- 活动总数 - 所有角色可见 -->
       <el-col :span="6">
         <el-card class="stat-card">
           <div class="stat-content">
@@ -25,8 +25,8 @@
               <i class="el-icon-date"></i>
             </div>
             <div class="stat-info">
-              <div class="stat-number">{{ stats.activities30d }}</div>
-              <div class="stat-label">近期活动</div>
+              <div class="stat-number">{{ stats.activitiesTotal }}</div>
+              <div class="stat-label">活动总数</div>
             </div>
           </div>
         </el-card>
@@ -183,7 +183,7 @@ export default {
     const user = this.$store.state.user || {};
     return {
       user,
-      stats: { members: 0, activities30d: 0, pending: 0, myJoin: 0 },
+      stats: { members: 0, activitiesTotal: 0, pending: 0, myJoin: 0 },
       pendingActivities: [],
       myActivities: [],
       deptStats: [],
@@ -218,13 +218,10 @@ export default {
         this.stats.members = (memberRes && memberRes.data && memberRes.data.total) ? memberRes.data.total : 0;
       } catch(e) {}
 
-      // 近期活动（近30天）
+      // 活动总数
       try {
-        const end = new Date();
-        const start = new Date();
-        start.setDate(end.getDate() - 30);
-        const act30 = await fetchActivities(1, 1, { startTime: formatDateISO(start), endTime: formatDateISO(end) });
-        this.stats.activities30d = (act30 && act30.data && act30.data.total) ? act30.data.total : 0;
+        const actTotal = await fetchActivities(1, 1, {});
+        this.stats.activitiesTotal = (actTotal && actTotal.data && actTotal.data.total) ? actTotal.data.total : 0;
       } catch(e) {}
 
       // 待审批活动

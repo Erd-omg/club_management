@@ -37,11 +37,11 @@
               <label>学院：</label>
               <span>{{ memberInfo.college }}</span>
             </div>
-            <div class="info-item">
+            <div class="info-item" v-if="memberInfo.role !== '指导老师'">
               <label>专业：</label>
               <span>{{ memberInfo.major }}</span>
             </div>
-            <div class="info-item">
+            <div class="info-item" v-if="memberInfo.role !== '指导老师'">
               <label>年级：</label>
               <span>{{ memberInfo.grade }}</span>
             </div>
@@ -53,7 +53,7 @@
               <label>邮箱：</label>
               <span>{{ memberInfo.email }}</span>
             </div>
-            <div class="info-item">
+            <div class="info-item" v-if="memberInfo.role !== '社长' && memberInfo.role !== '副社长' && memberInfo.role !== '指导老师'">
               <label>部门：</label>
               <span>{{ memberInfo.deptName }}</span>
             </div>

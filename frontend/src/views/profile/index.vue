@@ -23,10 +23,13 @@
             <el-form-item label="学院">
               <el-input v-model="form.college" />
             </el-form-item>
-            <el-form-item label="专业">
+            <el-form-item label="专业" v-if="form.role !== '指导老师'">
               <el-input v-model="form.major" />
             </el-form-item>
-            <el-form-item label="年级">
+            <el-form-item label="专业" v-else>
+              <el-input value="无" disabled />
+            </el-form-item>
+            <el-form-item label="年级" v-if="form.role !== '指导老师'">
               <el-select v-model="form.grade" style="width: 100%">
                 <el-option label="大一" value="大一" />
                 <el-option label="大二" value="大二" />
@@ -37,14 +40,20 @@
                 <el-option label="研三" value="研三" />
               </el-select>
             </el-form-item>
+            <el-form-item label="年级" v-else>
+              <el-input value="无" disabled />
+            </el-form-item>
             <el-form-item label="邮箱">
               <el-input v-model="form.email" />
             </el-form-item>
             <el-form-item label="手机号">
               <el-input v-model="form.phone" />
             </el-form-item>
-            <el-form-item label="部门">
-              <el-input :value="getDepartmentDisplay()" disabled />
+            <el-form-item label="部门" v-if="form.role !== '社长' && form.role !== '副社长' && form.role !== '指导老师'">
+              <el-input :value="form.deptName" disabled />
+            </el-form-item>
+            <el-form-item label="部门" v-else>
+              <el-input value="无" disabled />
             </el-form-item>
             <el-form-item label="角色">
               <el-input :value="form.role" disabled />
